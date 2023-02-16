@@ -1,0 +1,66 @@
+from response import Response
+from network import Network
+import pickle
+import socket
+from window import Window
+
+password = 'MKAMksj#4525kjmois563&*sf'
+
+def update_move(response: Response):
+    pass
+
+def send_move(n: Network, game_type, move, time, turn, addr):
+    response = Response(game_type, move=move, times=time, turn=turn, addr=addr, client_is_ready=True)
+    return n.send(pickle.dumps(response))
+
+def create(n: Network, game_type, addr):
+    n.client.connect(n.addr)
+    response = Response(game_type, create_req=True, addr=addr)
+    return n.send(pickle.dumps(response))
+
+def connect(n: Network, game_type, addr):
+    try:
+        n.client.connect(n.addr)
+    except TimeoutError:
+        return False
+    except ConnectionRefusedError:
+        return False
+    response = Response(game_type, connect_req=True, addr=addr, password=password)
+    return n.send(pickle.dumps(response))
+
+def dissconnect(n: Network):
+    n.client.close()
+    return Network()
+
+def start(n: Network):
+    n.send(pickle.dumps(Response(start_game_req=True, turn=1, addr='START')))
+
+def wait_for_lobby(n: Network):
+    return pickle.loads(n.send(pickle.dumps(Response(lobby_wait=True))))
+
+def wait_for_clients(n: Network):
+    return pickle.loads(n.send(pickle.dumps(Response(host=True, wait_for_clients=True))))
+
+def ban_clients(n: Network, clients):
+    return pickle.loads(n.send(pickle.dumps(Response(host=True, ban_clients=clients))))
+
+def send_end_game_req(n: Network):
+    return n.send(pickle.dumps(Response(end_game_req=True)))
+
+window = Window()
+
+if __name__ == '__main__':
+    game_type = 'Go'
+    IP_ADDR = socket.gethostbyname(socket.gethostname())
+    network = Network()     # reset network
+    run = True
+    server_status = ''
+    while run:
+        variable, value = window.run(run, server_status)
+        match variable:
+            case 'run':
+                run = value
+            case 'connect':
+                if not connect(network, game_type, IP_ADDR):
+                    print('Server Closed')
+                    server_status = 'CLOSED'
