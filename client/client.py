@@ -3,6 +3,7 @@ from network import Network
 import pickle
 import socket
 from window import Window
+from _thread import start_new_thread
 
 password = 'MKAMksj#4525kjmois563&*sf'
 
@@ -24,6 +25,8 @@ def connect(n: Network, game_type, addr):
     except TimeoutError:
         return False
     except ConnectionRefusedError:
+        return False
+    except OSError:
         return False
     response = Response(game_type, connect_req=True, addr=addr, password=password)
     return n.send(pickle.dumps(response))
@@ -50,17 +53,56 @@ def send_end_game_req(n: Network):
 window = Window()
 
 if __name__ == '__main__':
-    game_type = 'Go'
+    game_type = 'SANDBOX'
     IP_ADDR = socket.gethostbyname(socket.gethostname())
     network = Network()     # reset network
     run = True
     server_status = ''
+    turn = -1
+
+    def connect_thread():
+        global server_status
+        global turn
+        if not connect(network, game_type, IP_ADDR):
+            print('Server Closed')
+            server_status = 'CLOSED'
+        else:
+            response = pickle.loads(network.get())
+            print('Connected to:', response.type['server']['server_addr'], response.turn)
+            turn = response.turn
+
+    move = [False, []]
     while run:
-        variable, value = window.run(run, server_status)
+        variable, value = window.run(run, server_status, game_type, move)
         match variable:
             case 'run':
                 run = value
+            case 'change_game_type':
+                game_type = value
             case 'connect':
-                if not connect(network, game_type, IP_ADDR):
-                    print('Server Closed')
-                    server_status = 'CLOSED'
+                game_type = value
+                start_new_thread(connect_thread, ())
+            case 'move':
+                if game_type == 'SANDBOX':
+                    move = [True, value]
+                else:
+                    response = send_move(network, game_type, value, 0, turn, IP_ADDR)
+                    if response is None:
+                        print('Connection failed')
+                        run = False
+                        move = [True, value]     # TODO: change to print error or sth
+                    else:
+                        try:
+                            response = pickle.loads(response)
+                        except TypeError:
+                            break
+                        except KeyboardInterrupt:
+                            break
+                        except EOFError:
+                            break
+                        move = [not response.change_move_req, value]
+            case 'DEL':
+                if game_type == 'SANDBOX':
+                    move = ['DEL', value]
+            case 'exit':
+                break

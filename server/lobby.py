@@ -46,6 +46,6 @@ class Lobby:
         try:
             self.clients[client] = 0
             self.game.remove_client(client)
-            server_q_put('Removed client:', client)
+            server_q_put('Removed client_del:', client)
         except IndexError:
             server_q_put('Client at:', client, 'is already deleted!')

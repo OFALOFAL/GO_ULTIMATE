@@ -48,9 +48,9 @@ def threaded_client(conn, addr):
     except ConnectionResetError:
         server_q_put('Client:', addr, 'closed connection')
         return
-    if user_info.type['client']['password'] != password:
-        server_q_put('Client:', user_info.type['client']['client_addr'], 'failed to validate: wrong password')
-        conn.send(pickle.dumps(Response(addr=addr)))   # send invalid response back to client
+    if user_info.type['client_del']['password'] != password:
+        server_q_put('Client:', user_info.type['client_del']['client_addr'], 'failed to validate: wrong password')
+        conn.send(pickle.dumps(Response(addr=addr)))   # send invalid response back to client_del
         return
     turn = 1
     lobby = Lobby   # lobby string which will be replaced by connection or new lobby
@@ -98,10 +98,10 @@ def threaded_client(conn, addr):
                             lobby.remove_client(ban)
                         except:
                             pass
-            elif data.type['client']['client']:
-                if data.type['client']['lobby_wait']:
+            elif data.type['client_del']['client_del']:
+                if data.type['client_del']['lobby_wait']:
                     conn.send(pickle.dumps(Response(is_ready=lobby.ready)))    # send update to user
-                elif data.type['client']['start_game_req']:     # update server
+                elif data.type['client_del']['start_game_req']:     # update server
                     lobby.ready = True    # start lobby
                     lobby.clients_limit = len(lobby.clients)    # cut new joining players
                     for x in range(len(lobby.game.clients)):
@@ -118,7 +118,7 @@ def threaded_client(conn, addr):
                 elif lobby.ready:
                     if data.turn == lobby.active_turn:
                         if lobby.game.update_move(data.move, data.turn, data.times):
-                            server_q_put('client:', data.type['client']['client_addr'],': | turn:', data.turn, '| move:',data.move)
+                            server_q_put('client_del:', data.type['client_del']['client_addr'],': | turn:', data.turn, '| move:',data.move)
                             turn = data.turn
                             if turn < lobby.game.clients_limit:
                                 next_turn = turn+1
@@ -146,7 +146,7 @@ def threaded_client(conn, addr):
                                     strikes += 1
                             turn = next_turn
                         else:
-                            conn.send(pickle.dumps(Response(addr=addr, change_move_req=True)))   # send invalid move response back to client
+                            conn.send(pickle.dumps(Response(addr=addr, change_move_req=True)))   # send invalid move response back to client_del
                             time.sleep(0.1)   # shadowban not to slow down the server in case of overflow of invalid messages
                             strikes += 1
                     else:
@@ -165,7 +165,7 @@ def threaded_client(conn, addr):
 
             else:
                 server_q_put('Invalid response from:', addr)
-                # server_q_put(*[str(value)+':\n\t'+str(data.type['client'][value])+'\n' for value in data.type['client']])
+                # server_q_put(*[str(value)+':\n\t'+str(data.type['client_del'][value])+'\n' for value in data.type['client_del']])
                 # server_q_put(*[str(value)+':\n\t'+str(data.type['server'][value])+'\n' for value in data.type['server']])
                 # server_q_put(*[str(value)+':\n\t'+str(data.type['host'][value])+'\n' for value in data.type['host']])
                 break
@@ -188,7 +188,7 @@ def threaded_client(conn, addr):
             break
 
     try:
-        server_q_put("Lost connection with client:", user_info.type['client']['client_addr'], lobby.clients[client_id-1]['role'])
+        server_q_put("Lost connection with client_del:", user_info.type['client_del']['client_addr'], lobby.clients[client_id-1]['role'])
     except:
         pass
     if host:
