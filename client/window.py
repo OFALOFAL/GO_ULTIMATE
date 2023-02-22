@@ -42,29 +42,24 @@ class Window:
         self.game_mode_text = self.DEF_FONT.render('S A N D B O X', True, self.GOLD)
         self.game_mode_btn = pygame.Rect((self.right_site_center - 150, self.HEIGHT / 5), (300, 50))
 
-        self.tile_size = 48
-        self.tiles = [[pygame.Rect((j * self.tile_size + self.board_margin_left, i * self.tile_size + self.board_margin_top), (self.tile_size, self.tile_size)) for j in range(18)] for i in range(18)]
-
         self.right_border = pygame.Rect((self.WIDTH - self.WIDTH / 4, self.board_margin_top), (self.WIDTH / 4 - 48, self.HEIGHT - 2 * self.board_margin_top))
         self.right_border_s = pygame.Surface((self.WIDTH / 4 - 48, self.HEIGHT - 2 * self.board_margin_top))  # the size of your rect
         self.right_border_s.set_alpha(200)  # alpha level
         self.right_border_s.fill(self.WHITE)
         self.BG_IMG = pygame.transform.scale(pygame.image.load(os.path.join('Assets', 'BG_1.png')), (self.WIDTH, self.HEIGHT))
-
-        self.all_moves = []
-        self.moves_by_color = [(self.BLACK, []), (self.WHITE, [])]
+        self.colors = [self.BLACK, self.WHITE]
         for x in range(8 + 1):
             color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
             valid = False
             while not valid:
-                for move_color in [move_color[0] for move_color in self.moves_by_color]:
-                    if (move_color[0] - 30 < color[0] < move_color[0] + 30) and \
-                            (move_color[1] - 30 < color[1] < move_color[1] + 30) and \
-                            (move_color[2] - 30 < color[2] < move_color[2] + 30):
+                for added_color in self.colors:
+                    if (added_color[0] - 30 < color[0] < added_color[0] + 30) and \
+                            (added_color[1] - 30 < color[1] < added_color[1] + 30) and \
+                            (added_color[2] - 30 < color[2] < added_color[2] + 30):
                         color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
                         break
                 valid = True
-            self.moves_by_color.append((color, []))
+            self.colors.append(color)
         self.currently_placing = 0
         self.run_status = {'con_clicked': False, 'exit_clicked': False, 'sandbox_clicked': False, 'go_clicked': False}
 
@@ -86,14 +81,19 @@ class Window:
             pygame.draw.rect(self.WIN, self.DARK_RED, self.exit_btn)
         self.WIN.blit(self.EXIT_TEXT, (self.exit_btn_pos[0] + self.exit_btn.width/2 - self.EXIT_TEXT.get_width()/2,
                                        self.exit_btn_pos[1] + self.exit_btn.height/2 - self.EXIT_TEXT.get_height()/2 + 3))
-        for row in self.tiles:
-            for tile in row:
-                self.WIN.blit(pygame.transform.scale(pygame.image.load(os.path.join('Assets', 'tile_1.png')), (self.tile_size, self.tile_size)), (tile.x, tile.y))
+        for i in range(self.game.tiles_ammount):
+            for j in range(self.game.tiles_ammount):
+                self.WIN.blit(pygame.transform.scale(pygame.image.load(os.path.join('Assets', 'tile_1.png')), (self.game.tile_size, self.game.tile_size)),
+                              (i * self.game.tile_size + self.board_margin_left, j * self.game.tile_size + self.board_margin_top))
 
-        for color in self.moves_by_color:
-            for move in color[1]:
-                pygame.draw.rect(self.WIN, color[0], pygame.Rect((move[1] * self.tile_size + self.board_margin_left - 16, move[0] * self.tile_size + self.board_margin_top - 16),
-                                                                   (32, 32)))
+        for i, row in enumerate(self.game.tiles):
+            for j, move in enumerate(row):
+                if move != -1:
+                    pygame.draw.rect(self.WIN, self.colors[move], pygame.Rect(
+                        (j * self.game.tile_size + self.board_margin_left - (self.game.tiles_ammount / 0.9) / 2,
+                         i * self.game.tile_size + self.board_margin_top - (self.game.tiles_ammount / 0.9) / 2),
+                                                                       (self.game.tiles_ammount / 0.9, self.game.tiles_ammount / 0.9)
+                    ))
 
         pygame.display.update()
 
@@ -121,10 +121,10 @@ class Window:
                         ev.y = 1
                     if ev.y < -1:
                         ev.y = -1
-                    if self.currently_placing + ev.y == len(self.moves_by_color):
+                    if self.currently_placing + ev.y == len(self.colors):
                         self.currently_placing = 0
                     elif self.currently_placing + ev.y == -1:
-                        self.currently_placing = len(self.moves_by_color) -1
+                        self.currently_placing = len(self.colors) -1
                     else:
                         self.currently_placing += ev.y
 
@@ -138,8 +138,9 @@ class Window:
                 if self.exit_btn.contains(pygame.Rect(pygame.mouse.get_pos(), (1, 1))):
                     self.run_status['exit_clicked_clicked'] = True
                     return 'exit', True
-                for i, row in enumerate(self.tiles):
+                for i, row in enumerate(self.game.tiles):
                     for j, tile in enumerate(row):
+                        tile = pygame.Rect((j * self.game.tile_size + self.board_margin_left, i * self.game.tile_size + self.board_margin_top), (self.game.tile_size, self.game.tile_size))
                         if tile.contains(pygame.Rect(pygame.mouse.get_pos(), (1, 1))):
                             match self.get_clicked_corner(tile):
                                 case 0:
@@ -155,8 +156,9 @@ class Window:
                     self.run_status['con_clicked'] = False
 
             if pygame.mouse.get_pressed()[2]:
-                for i, row in enumerate(self.tiles):
+                for i, row in enumerate(self.game.tiles):
                     for j, tile in enumerate(row):
+                        tile = pygame.Rect((j * self.game.tile_size + self.board_margin_left, i * self.game.tile_size + self.board_margin_top), (self.game.tile_size, self.game.tile_size))
                         if tile.contains(pygame.Rect(pygame.mouse.get_pos(), (1, 1))):
                             match self.get_clicked_corner(tile):
                                 case 0:
@@ -169,15 +171,9 @@ class Window:
                                     return 'DEL', [i + 1, j + 1]
 
         if move[0]:
-            if not move[1] in self.all_moves:
-                self.all_moves.append(move[1])
-                self.moves_by_color[self.currently_placing][1].append(move[1])
+            self.game.add_move([self.currently_placing, move[1]])
         if move[0] == 'DEL':
-            if move[1] in self.all_moves:
-                self.all_moves.remove(move[1])
-            for color in self.moves_by_color:
-                if move[1] in color[1]:
-                    color[1].remove(move[1])
+            self.game.remove_move(move[1])
 
 
         return 'run', run
