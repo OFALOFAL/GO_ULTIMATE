@@ -29,20 +29,34 @@ class Game:
             self.tiles[move[0]][move[1]] = -1
 
     def remove_enclosed_groups(self, by_group, last_move):
+        moves_to_reset = []
         for color, groups in enumerate(by_group):
             for group in groups:
                 enclosed = self.is_enclosed(group)
-                if len(group) == 1:
-                    if group[0] == last_move:
-                        print('ok')
-                        continue
-                    if enclosed:
-                        self.tiles[group[0][0]][group[0][1]] = -1
-                elif enclosed and last_move not in group:
+                if enclosed and last_move not in group:
                     for move in group:
-                        self.tiles[move[0]][move[1]] = -1
+                        moves_to_reset.append(move)
                 elif last_move in group and enclosed:
-                    pass    # TODO: write here so if the last move was in the group it first checks if that last move coused other group to close
+                    for groups_check in groups:
+                        if all(self.is_enclosed_with_last(groups_check, last_move)) and last_move not in groups_check:
+                            for move_ in groups_check:
+                                moves_to_reset.append(move_)
+        for move in moves_to_reset:
+            self.tiles[move[0]][move[1]] = -1
+
+    def is_enclosed_with_last(self, group, last_move):  #TODO: almost done, when fixed it'll be all easier...
+        last_move_in_enclosing = False
+        for move in group:
+            i, j = move[0], move[1]
+            corresponding = (self.tiles[i - 1][j], self.tiles[i + 1][j], self.tiles[i][j - 1], self.tiles[i][j + 1])
+            if last_move in corresponding:
+                last_move_in_enclosing = True
+            try:
+                if all((x == -1 for x in corresponding)):
+                    return [False, last_move_in_enclosing]
+            except IndexError:
+                pass
+        return [True, last_move_in_enclosing]
 
     def is_enclosed(self, group):
         for move in group:
