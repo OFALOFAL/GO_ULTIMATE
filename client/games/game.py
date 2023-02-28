@@ -41,7 +41,6 @@ class Game:
                             moves_to_reset.append(move)
                     elif last_move in group:    # TODO: move it before adding move to tell user that this move would be invalid
                         prior = False
-                        print('ok')
                         for color_, groups_ in enumerate(by_group):
                             for group_ in groups_:
                                 if last_move not in group_ and all(self.is_enclosed_with_last(group_, last_move)):
