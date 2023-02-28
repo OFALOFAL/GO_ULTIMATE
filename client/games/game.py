@@ -28,23 +28,34 @@ class Game:
         if self.game_type == 'SANDBOX':
             self.tiles[move[0]][move[1]] = -1
 
-    def remove_enclosed_groups(self, by_group, last_move):
+    def remove_enclosed_groups(self, by_group, last_move_info):
         moves_to_reset = []
+        color, last_move = last_move_info
+        last_move = tuple(last_move)
+
         for color, groups in enumerate(by_group):
             for group in groups:
-                enclosed = self.is_enclosed(group)
-                if enclosed and last_move not in group:
-                    for move in group:
-                        moves_to_reset.append(move)
-                elif last_move in group and enclosed:
-                    for groups_check in groups:
-                        if all(self.is_enclosed_with_last(groups_check, last_move)) and last_move not in groups_check:
-                            for move_ in groups_check:
-                                moves_to_reset.append(move_)
+                if self.is_enclosed(group):
+                    if last_move not in group:
+                        for move in group:
+                            moves_to_reset.append(move)
+                    elif last_move in group:    # TODO: move it before adding move to tell user that this move would be invalid
+                        prior = False
+                        print('ok')
+                        for color_, groups_ in enumerate(by_group):
+                            for group_ in groups_:
+                                if last_move not in group_ and all(self.is_enclosed_with_last(group_, last_move)):
+                                    prior = True
+                                    for move_ in group_:
+                                        moves_to_reset.append(move_)
+                                    for move in group:
+                                        moves_to_reset.remove(move)
+                        if not prior:
+                            for move in group:
+                                moves_to_reset.append(move)
         for move in moves_to_reset:
             self.tiles[move[0]][move[1]] = -1
-
-    def is_enclosed_with_last(self, group, last_move):  #TODO: almost done, when fixed it'll be all easier...
+    def is_enclosed_with_last(self, group, last_move):
         last_move_in_enclosing = False
         for move in group:
             i, j = move[0], move[1]

@@ -61,7 +61,9 @@ class Window:
                 valid = True
             self.colors.append(color)
         self.currently_placing = 0
+        self.next_placing = 0
         self.run_status = {'con_clicked': False, 'exit_clicked': False, 'sandbox_clicked': False, 'go_clicked': False}
+        self.last_move = []
 
     def draw(self, server_status, run_status):
         self.WIN.blit(self.BG_IMG, (0, 0))
@@ -122,11 +124,11 @@ class Window:
                     if ev.y < -1:
                         ev.y = -1
                     if self.currently_placing + ev.y == len(self.colors):
-                        self.currently_placing = 0
+                        self.next_placing = 0
                     elif self.currently_placing + ev.y == -1:
-                        self.currently_placing = len(self.colors) -1
+                        self.next_placing = len(self.colors) -1
                     else:
-                        self.currently_placing += ev.y
+                        self.next_placing += ev.y
 
             if ev.type == pygame.QUIT:
                 run = False
@@ -171,9 +173,13 @@ class Window:
                                     return 'DEL', [i + 1, j + 1]
 
         if move[0]:
-            self.game.add_move([self.currently_placing, move[1]])
+            if self.last_move != move[1]:
+                self.last_move = move[1]
+                self.game.add_move([self.currently_placing, move[1]])
+                self.currently_placing = self.next_placing
         if move[0] == 'DEL':
             self.game.remove_move(move[1])
+            self.last_move = []
 
 
         return 'run', run
