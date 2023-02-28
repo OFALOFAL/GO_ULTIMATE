@@ -84,7 +84,7 @@ if __name__ == '__main__':
                 start_new_thread(connect_thread, ())
             case 'move':
                 if game_type == 'SANDBOX':
-                    move = [True, value]
+                    move = ['MOVE', value]
                 else:
                     response = send_move(network, game_type, value, 0, turn, IP_ADDR)
                     if response is None:
