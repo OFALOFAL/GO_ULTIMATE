@@ -24,6 +24,7 @@ class Game:
         if self.game_type == 'SANDBOX':
             if self.tiles[move[1][0]][move[1][1]] == -1:
                 valid = self.update_board(self.tiles.copy(), move)
+                self.count_tile_points()
         return valid
 
     def remove_move(self, move):
@@ -58,26 +59,32 @@ class Game:
         else:
             tiles[last_move[0]][last_move[1]] = -1
         return valid
+
     def is_enclosed_with_last(self, tiles, group, last_move):
         last_move_in_enclosing = False
         for move in group:
             i, j = move[0], move[1]
             last_move_in_enclosing = last_move == (i - 1, j) or last_move == (i + 1, j) or last_move == (i, j - 1) or last_move == (i, j + 1)
-            try:
-                if tiles[i - 1][j] == -1 or tiles[i + 1][j] == -1 or tiles[i][j - 1] == -1 or tiles[i][j + 1] == -1:
-                    return False
-            except IndexError:
-                pass
+
+            adj_moves = [[i - 1, j], [i + 1, j], [i, j - 1], [i, j + 1]]
+            for adj in adj_moves:
+                try:
+                    if tiles[adj[0]][adj[1]] == -1:
+                        return False
+                except IndexError:
+                    pass
         return True and last_move_in_enclosing
 
     def is_enclosed(self, tiles, group):
         for move in group:
             i, j = move[0], move[1]
-            try:
-                if tiles[i - 1][j] == -1 or tiles[i + 1][j] == -1 or tiles[i][j - 1] == -1 or tiles[i][j + 1] == -1:
-                    return False
-            except IndexError:
-                pass    # TODO: border removing isn't working
+            adj_moves = [[i - 1, j], [i + 1, j], [i, j - 1], [i, j + 1]]
+            for adj in adj_moves:
+                try:
+                    if tiles[adj[0]][adj[1]] == -1:
+                        return False
+                except IndexError:
+                    pass
         return True
 
     def update_board(self, tiles, last_move):
@@ -99,7 +106,6 @@ class Game:
             visited.add(move)
             adj_moves = [(move[0] - 1, move[1]), (move[0] + 1, move[1]), (move[0], move[1] - 1), (move[0], move[1] + 1)]
             for adj in adj_moves:
-                print(adj)
                 if adj in visited or adj[0] in [-1, 19] or adj[1] in [-1, 19]:
                     continue
 
@@ -122,19 +128,17 @@ class Game:
                 group = dfs(-1, tuple(move), empty_visited)
                 self.empty_groups.append(group)
 
-        self.count_tile_points()
         return self.remove_enclosed_groups(tiles, by_group, last_move)
 
     def count_tile_points(self):
         self.tile_points = [0 for _ in range(11)]
-        print(len(self.empty_groups))
         for group in self.empty_groups:
             colors = []
             for move in group:
                 adj_moves = [(move[0] - 1, move[1]), (move[0] + 1, move[1]), (move[0], move[1] - 1), (move[0], move[1] + 1)]
                 for adj in adj_moves:
                     try:
-                        if self.tiles[adj[0]][adj[1]] not in [colors, -1]:
+                        if self.tiles[adj[0]][adj[1]] not in [*colors, -1]:
                                 colors.append(self.tiles[adj[0]][adj[1]])
                     except IndexError:
                         pass
