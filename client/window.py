@@ -1,6 +1,6 @@
 import pygame
 import os
-from games.game import Game
+from game import Game
 import random
 
 class Window:
@@ -175,9 +175,10 @@ class Window:
             if self.last_move != move[1]:
                 self.last_move = move[1]
                 valid = self.game.add_move([self.currently_placing, move[1]])
+                print('hand:', self.game.hand_points)
+                print('tile:', self.game.tile_points)
         if move[0] == 'DEL':
             self.game.remove_move(move[1])
             self.last_move = []
-
 
         return 'run', run

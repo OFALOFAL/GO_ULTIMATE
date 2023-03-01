@@ -5,12 +5,13 @@ class Game:
         self.tile_size = 48 * 18 / self.tiles_ammount
 
         if self.game_type == 'SANDBOX':
+            self.empty_groups = []
+            self.hand_points = [0 for _ in range(11)]
+            self.tile_points = [0 for _ in range(11)]
             self.tiles_ammount = 18
             self.tiles = [[-1 for j in range(self.tiles_ammount + 1)]
                           for i in range(self.tiles_ammount + 1)]
             self.tile_size = 48 * 18 / self.tiles_ammount
-            self.adjacencies = [[4 for j in range(self.tiles_ammount + 1)]
-                            for i in range(self.tiles_ammount + 1)]
 
 
     def change_tile_ammount(self, new_ammount):
@@ -32,7 +33,7 @@ class Game:
 
     def remove_enclosed_groups(self, tiles, by_group, last_move_info):
         moves_to_reset = []
-        color, last_move = last_move_info
+        last_color, last_move = last_move_info
         last_move = tuple(last_move)
         valid = True
 
@@ -51,6 +52,7 @@ class Game:
         # If move is valide -> update the real board, if not -> remove the last move
         if valid:
             for move in moves_to_reset:
+                self.hand_points[last_color] += 1    # no other than last move could delete any group as those wolud be deleted in other turns
                 tiles[move[0]][move[1]] = -1
             self.tiles = tiles
         else:
@@ -75,38 +77,66 @@ class Game:
                 if tiles[i - 1][j] == -1 or tiles[i + 1][j] == -1 or tiles[i][j - 1] == -1 or tiles[i][j + 1] == -1:
                     return False
             except IndexError:
-                pass
+                pass    # TODO: border removing isn't working
         return True
 
     def update_board(self, tiles, last_move):
         tiles[last_move[1][0]][last_move[1][1]] = last_move[0]
 
         by_color = [[] for _ in range(11)]
+        empty_moves = []
         for i, row in enumerate(tiles):
             for j, move in enumerate(row):
                 if move != -1:
                     by_color[move].append([i, j])
-
+                else:
+                    empty_moves.append([i, j])
 
         by_group = [[] for _ in range(11)]
         visited = set()
-
-        def dfs(color, move):
+        def dfs(color, move, visited):
             group = [move]
             visited.add(move)
             adj_moves = [(move[0] - 1, move[1]), (move[0] + 1, move[1]), (move[0], move[1] - 1), (move[0], move[1] + 1)]
             for adj in adj_moves:
-                if adj in visited:
+                print(adj)
+                if adj in visited or adj[0] in [-1, 19] or adj[1] in [-1, 19]:
                     continue
+
                 adj_color = tiles[adj[0]][adj[1]]
                 if adj_color == color:
-                    group.extend(dfs(color, adj))
+                    group.extend(dfs(color, adj, visited))
+
             return group
 
         for color, moves in enumerate(by_color):
             for move in moves:
                 if tuple(move) not in visited:
-                    group = dfs(color, tuple(move))
+                    group = dfs(color, tuple(move), visited)
                     by_group[color].append(group)
 
+        empty_visited = set()
+        self.empty_groups = []
+        for move in empty_moves:
+            if tuple(move) not in empty_visited:
+                group = dfs(-1, tuple(move), empty_visited)
+                self.empty_groups.append(group)
+
+        self.count_tile_points()
         return self.remove_enclosed_groups(tiles, by_group, last_move)
+
+    def count_tile_points(self):
+        self.tile_points = [0 for _ in range(11)]
+        print(len(self.empty_groups))
+        for group in self.empty_groups:
+            colors = []
+            for move in group:
+                adj_moves = [(move[0] - 1, move[1]), (move[0] + 1, move[1]), (move[0], move[1] - 1), (move[0], move[1] + 1)]
+                for adj in adj_moves:
+                    try:
+                        if self.tiles[adj[0]][adj[1]] not in [colors, -1]:
+                                colors.append(self.tiles[adj[0]][adj[1]])
+                    except IndexError:
+                        pass
+            if len(colors) == 1:
+                self.tile_points[colors[0]] += len(group)
