@@ -3,6 +3,7 @@ class Game:
         self.game_type = game_type
         self.tiles_ammount = 18
         self.tile_size = 48 * 18 / self.tiles_ammount
+        self.moves = 0
 
         if self.game_type == 'SANDBOX':
             self.empty_groups = []
@@ -25,6 +26,8 @@ class Game:
             if self.tiles[move[1][0]][move[1][1]] == -1:
                 valid = self.update_board(self.tiles.copy(), move)
                 self.count_tile_points()
+        if valid:
+            self.moves += 1
         return valid
 
     def remove_move(self, move):
@@ -68,11 +71,12 @@ class Game:
 
             adj_moves = [[i - 1, j], [i + 1, j], [i, j - 1], [i, j + 1]]
             for adj in adj_moves:
-                try:
-                    if tiles[adj[0]][adj[1]] == -1:
-                        return False
-                except IndexError:
-                    pass
+                if -1 not in [adj[0], adj[1]]:
+                    try:
+                        if tiles[adj[0]][adj[1]] == -1:
+                            return False
+                    except IndexError:
+                        pass
         return True and last_move_in_enclosing
 
     def is_enclosed(self, tiles, group):
@@ -80,11 +84,12 @@ class Game:
             i, j = move[0], move[1]
             adj_moves = [[i - 1, j], [i + 1, j], [i, j - 1], [i, j + 1]]
             for adj in adj_moves:
-                try:
-                    if tiles[adj[0]][adj[1]] == -1:
-                        return False
-                except IndexError:
-                    pass
+                if -1 not in [adj[0], adj[1]]:
+                    try:
+                        if tiles[adj[0]][adj[1]] == -1:
+                            return False
+                    except IndexError:
+                        pass
         return True
 
     def update_board(self, tiles, last_move):
