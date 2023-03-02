@@ -40,7 +40,11 @@ class Window:
         self.exit_btn = pygame.Rect(self.exit_btn_pos, (70, 35))
 
         self.game_mode_text = self.DEF_FONT.render('S A N D B O X', True, self.GOLD)
-        self.game_mode_btn = pygame.Rect((self.right_site_center - 150, self.HEIGHT / 5), (300, 50))
+        self.game_mode_btn = pygame.Rect((self.right_site_center - 150, self.HEIGHT / 5), (300, 50))    # TODO: make the button to be able to change mode
+
+        self.CURRENTLY_PLACING_TEXT = self.SMALL_FONT.render('CURRENTLY PLACING:', True, self.BLACK)
+        self.currently_placing_color = pygame.Rect((self.WIDTH - 150 - self.exit_margin_right, self.HEIGHT / 5 - 70), (35, 35))
+        self.CURRENTLY_PLACING_COLOR_BG = pygame.Rect((self.WIDTH - 150 - self.exit_margin_right - 5, self.HEIGHT / 5 - 70 - 5), (45, 45))
 
         self.right_border = pygame.Rect((self.WIDTH - self.WIDTH / 4, self.board_margin_top), (self.WIDTH / 4 - 48, self.HEIGHT - 2 * self.board_margin_top))
         self.right_border_s = pygame.Surface((self.WIDTH / 4 - 48, self.HEIGHT - 2 * self.board_margin_top))  # the size of your rect
@@ -82,6 +86,10 @@ class Window:
             pygame.draw.rect(self.WIN, self.DARK_RED, self.exit_btn)
         self.WIN.blit(self.EXIT_TEXT, (self.exit_btn_pos[0] + self.exit_btn.width/2 - self.EXIT_TEXT.get_width()/2,
                                        self.exit_btn_pos[1] + self.exit_btn.height/2 - self.EXIT_TEXT.get_height()/2 + 3))
+        self.WIN.blit(self.CURRENTLY_PLACING_TEXT, (self.right_site_center - self.CURRENTLY_PLACING_TEXT.get_width()/2 - 30, self.HEIGHT / 5 - 60))
+        pygame.draw.rect(self.WIN, self.GREY, self.CURRENTLY_PLACING_COLOR_BG)
+        pygame.draw.rect(self.WIN, self.colors[self.currently_placing], self.currently_placing_color)
+
         for i in range(self.game.tiles_ammount):
             for j in range(self.game.tiles_ammount):
                 self.WIN.blit(pygame.transform.scale(pygame.image.load(os.path.join('Assets', 'tile_1.png')), (self.game.tile_size, self.game.tile_size)),
