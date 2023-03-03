@@ -1,19 +1,26 @@
 class Game:
     def __init__(self, game_type):
+        self.tiles = None
+        self.tile_points = None
+        self.hand_points = None
+        self.empty_groups = None
+        self.tile_size = None
+        self.tiles_ammount = None
+
         self.game_type = game_type
-        self.tiles_ammount = 18
-        self.tile_size = 48 * 18 / self.tiles_ammount
         self.moves = 0
 
         if self.game_type == 'SANDBOX':
-            self.empty_groups = []
-            self.hand_points = [0 for _ in range(11)]
-            self.tile_points = [0 for _ in range(11)]
-            self.tiles_ammount = 18
-            self.tiles = [[-1 for j in range(self.tiles_ammount + 1)]
-                          for i in range(self.tiles_ammount + 1)]
-            self.tile_size = 48 * 18 / self.tiles_ammount
+            self.setup_sandbox()
 
+    def setup_sandbox(self):
+        self.empty_groups = []
+        self.hand_points = [0 for _ in range(10)]
+        self.tile_points = [0 for _ in range(10)]
+        self.tiles_ammount = 18
+        self.tiles = [[-1 for j in range(self.tiles_ammount + 1)]
+                      for i in range(self.tiles_ammount + 1)]
+        self.tile_size = 48 * 18 / self.tiles_ammount
 
     def change_tile_ammount(self, new_ammount):
         if self.game_type == 'SANDBOX':
@@ -34,6 +41,7 @@ class Game:
         if self.game_type == 'SANDBOX':
             if self.tiles[move[0]][move[1]] != -1:
                 self.tiles[move[0]][move[1]] = -1
+        self.count_tile_points()
 
     def remove_enclosed_groups(self, tiles, by_group, last_move_info):
         moves_to_reset = []
@@ -136,7 +144,7 @@ class Game:
         return self.remove_enclosed_groups(tiles, by_group, last_move)
 
     def count_tile_points(self):
-        self.tile_points = [0 for _ in range(11)]
+        self.tile_points = [0 for _ in range(10)]
         for group in self.empty_groups:
             colors = []
             for move in group:
