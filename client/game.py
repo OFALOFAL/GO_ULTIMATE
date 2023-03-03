@@ -79,7 +79,7 @@ class Game:
 
             adj_moves = [[i - 1, j], [i + 1, j], [i, j - 1], [i, j + 1]]
             for adj in adj_moves:
-                if -1 not in [adj[0], adj[1]]:
+                if -1 not in [adj[0], adj[1]] and self.tiles_ammount + 1 not in [adj[0], adj[1]]:
                     try:
                         if tiles[adj[0]][adj[1]] == -1:
                             return False
@@ -92,7 +92,7 @@ class Game:
             i, j = move[0], move[1]
             adj_moves = [[i - 1, j], [i + 1, j], [i, j - 1], [i, j + 1]]
             for adj in adj_moves:
-                if -1 not in [adj[0], adj[1]]:
+                if -1 not in [adj[0], adj[1]] and self.tiles_ammount + 1 not in [adj[0], adj[1]]:
                     try:
                         if tiles[adj[0]][adj[1]] == -1:
                             return False
@@ -150,10 +150,11 @@ class Game:
             for move in group:
                 adj_moves = [(move[0] - 1, move[1]), (move[0] + 1, move[1]), (move[0], move[1] - 1), (move[0], move[1] + 1)]
                 for adj in adj_moves:
-                    try:
-                        if self.tiles[adj[0]][adj[1]] not in [*colors, -1]:
-                                colors.append(self.tiles[adj[0]][adj[1]])
-                    except IndexError:
-                        pass
+                    if -1 not in [adj[0], adj[1]] and self.tiles_ammount + 1 not in [adj[0], adj[1]]:
+                        try:
+                            if self.tiles[adj[0]][adj[1]] not in [*colors, -1]:
+                                    colors.append(self.tiles[adj[0]][adj[1]])
+                        except IndexError:
+                            pass
             if len(colors) == 1:
                 self.tile_points[colors[0]] += len(group)
