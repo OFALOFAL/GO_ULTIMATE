@@ -60,7 +60,7 @@ if __name__ == '__main__':
     server_status = ''
     turn = -1
 
-    def connect_thread():
+    def connect_thread(players_limit):
         global server_status
         global turn
         if not connect(network, game_type, IP_ADDR):
@@ -70,27 +70,40 @@ if __name__ == '__main__':
             response = pickle.loads(network.get())
             print('Connected to:', response.type['server']['server_addr'], response.turn)
             turn = response.turn
-
+            if response.type['host']['host']:
+                host = True
+                try:
+                    while len(wait_for_clients(network).type['host']['clients']) < players_limit:
+                        pass
+                except:
+                    return
+                start(network)
+            else:
+                ready = False
+                try:
+                    while not ready:
+                        wait = wait_for_lobby(network)
+                        ready = wait.is_ready
+                except:
+                    return
     move = [False, []]
     while run:
         variable, value = window.run(run, server_status, game_type, move)
         match variable:
             case 'run':
                 run = value
-            case 'change_game_type':
-                game_type = value
             case 'connect':
-                game_type = value
-                start_new_thread(connect_thread, ())
+                game_type, players_limit = value
+                start_new_thread(connect_thread, (players_limit, ))
             case 'move':
                 if game_type == 'SANDBOX':
                     move = ['MOVE', value]
                 else:
                     response = send_move(network, game_type, value, 0, turn, IP_ADDR)
                     if response is None:
-                        print('Connection failed')
                         run = False
-                        move = [True, value]     # TODO: change to print error or sth
+                        move = [True, value]
+                        server_status = 'CLOSED'
                     else:
                         try:
                             response = pickle.loads(response)

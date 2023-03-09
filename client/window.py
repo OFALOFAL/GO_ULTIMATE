@@ -12,6 +12,10 @@ class Window:
         self.SMALL_FONT = pygame.font.SysFont('Corbel', 24)
         self.MINI_FONT = pygame.font.SysFont('Corbel', 16)
 
+        self.FONT_2 = pygame.font.SysFont('Cabril', 35)
+        self.SMALL_FONT_2 =  pygame.font.SysFont('Cabril', 24)
+        self.MINI_FONT_2 = pygame.font.SysFont('Cabril', 16)
+
         self.WIDTH = 1800
         self.HEIGHT = 950
         self.WIN = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
@@ -34,7 +38,7 @@ class Window:
         self.CON_TEXT = self.DEF_FONT.render('Connect', True, self.BLACK)
         self.RESET_TEXT = self.DEF_FONT.render('Reset', True, self.BLACK)
         self.right_site_center = (self.WIDTH + self.WIDTH - self.WIDTH / 4 - 5) / 2 - self.board_margin_right / 2
-        self.con_btn_pos = (self.right_site_center - 100, self.HEIGHT - self.HEIGHT / 4)
+        self.con_btn_pos = (self.right_site_center - 100, self.HEIGHT - self.HEIGHT / 5)
         self.con_btn = pygame.Rect(self.con_btn_pos, (200, 75))
 
         self.EXIT_TEXT = self.SMALL_FONT.render('EXIT', True, self.BLACK)
@@ -43,7 +47,7 @@ class Window:
         self.exit_btn_pos = (self.WIDTH - 125 - self.exit_margin_right, self.exit_margin_top)
         self.exit_btn = pygame.Rect(self.exit_btn_pos, (70, 35))
 
-        self.game_mode_text = self.DEF_FONT.render('S A N D B O X', True, self.GOLD)
+        self.game_mode_text = self.FONT_2.render('S A N D B O X', True, self.GOLD)
         self.game_mode_btn = pygame.Rect((self.right_site_center - 150, self.HEIGHT / 5), (300, 50))    # TODO: make the button to be able to change mode
         self.game_modes_bg = pygame.Rect((self.right_site_center - 150, self.HEIGHT / 5 + self.game_mode_btn.height), (300, 400))
 
@@ -75,8 +79,36 @@ class Window:
         self.right_border_s.set_alpha(200)
         self.right_border_s.fill(self.WHITE)
 
-        self.game_modes = ['SANDBOX', 'GO', 'GO 5', 'GO 10', 'GO NATIONS']
-        self.game_modes_text = [self.SMALL_FONT.render(name, True, self.GOLD) for name in self.game_modes]
+        self.game_modes = ['GO | 2', 'GO | 5', 'GO | 10', 'GO | 30', 'GO NATIONS', 'SANDBOX']
+        self.game_modes_text = [self.SMALL_FONT_2.render(name, True, self.GOLD) for name in self.game_modes]
+        top_surface = pygame.Surface((300, 50))
+        top_surface.set_alpha(50)
+        top_surface.fill(self.GREY)
+        self.game_modes_buttons = [(top_surface, pygame.Rect((self.right_site_center - 150, self.HEIGHT / 5), (300, self.game_modes_bg.height / len(self.game_modes))))]
+        row = 0
+        for x, game_mode in enumerate(self.game_modes):
+            if x % 2 == 0:
+                row += 7
+                surface = pygame.Surface((self.game_modes_bg.width/2, self.game_modes_bg.height/(len(self.game_modes)+2)))
+                surface.set_alpha(50)
+                surface.fill(self.GREY)
+                rect = pygame.Rect((self.right_site_center - 150, self.HEIGHT / 5 + row * self.game_modes_text[0].get_height() - self.game_modes_bg.height/len(self.game_modes)/4),
+                                   (150, self.game_modes_bg.height/len(self.game_modes)))
+                self.game_modes_buttons.append((surface, rect))
+            else:
+                surface = pygame.Surface((self.game_modes_bg.width / 2, self.game_modes_bg.height / (len(self.game_modes) + 2)))
+                surface.set_alpha(50)
+                surface.fill(self.GREY)
+                rect = pygame.Rect((self.right_site_center, self.HEIGHT / 5 + row * self.game_modes_text[0].get_height() - self.game_modes_bg.height / len(self.game_modes) / 4),
+                                   (150, self.game_modes_bg.height / len(self.game_modes)))
+                self.game_modes_buttons.append((surface, rect))
+
+        self.player_limit_bar_s = pygame.Surface((300, 10))
+        self.player_limit_bar_s.set_alpha(200)
+        self.player_limit_bar_s.fill(self.LIGHT_GREY)
+        self.player_limit_bar_bg = pygame.Rect((self.right_site_center - 150, self.HEIGHT/2 + self.HEIGHT/4.5), (300, 10))
+        self.player_limit_tabs = [pygame.Rect((self.right_site_center - 125 + 30 * x, self.HEIGHT/2 + self.HEIGHT/4.5 - 10), (10, 30)) for x in range(9)]
+        self.choosen_limit_bar = pygame.Rect((self.right_site_center - 127, self.HEIGHT/2 + self.HEIGHT/4.5 - 12), (14, 34))
 
         self.BG_IMG = pygame.transform.scale(pygame.image.load(os.path.join('Assets', 'BG_1.png')), (self.WIDTH, self.HEIGHT))
         self.colors = [self.BLACK, self.WHITE]
@@ -93,7 +125,7 @@ class Window:
                 valid = True
             self.colors.append(color)
         self.currently_placing = 0
-        self.run_status = {'con_clicked': False, 'exit_clicked': False, 'game_mode_clicked': False, 'go_clicked': False}
+        self.run_status = {'con_clicked': False, 'exit_clicked': False, 'go_clicked': False, 'show_bar': False, 'connected': False}
         self.last_move = []
         self.clicked = False
 
@@ -139,20 +171,30 @@ class Window:
                           )
 
 
-        if self.run_status['game_mode_clicked']:
-            pygame.draw.rect(self.WIN, self.REDDISH, self.game_modes_bg)
-            pygame.draw.rect(self.WIN, self.REDDISH, self.game_mode_btn)
-            row = 0
-            for x, game_mode_text in enumerate(self.game_modes_text):
-                if x % 2 == 0:
-                    row += 1
-                    self.WIN.blit(game_mode_text, (self.right_site_center + game_mode_text.get_width() + 10, self.HEIGHT / 5 + 100 + row * game_mode_text.get_height()))
-                else:
-                    self.WIN.blit(game_mode_text, (self.right_site_center - game_mode_text.get_width() - 10, self.HEIGHT / 5 + 100 + row * game_mode_text.get_height()))
-        else:
-            pygame.draw.rect(self.WIN, self.DARK_GREY, self.game_mode_btn)
+        left_side_text = self.right_site_center - 65
+        right_side_text = self.right_site_center + 75
+        pygame.draw.rect(self.WIN, self.REDDISH, self.game_modes_bg)
+        pygame.draw.rect(self.WIN, self.REDDISH, self.game_mode_btn)
+        row = 0
+        for x, game_mode_text in enumerate(self.game_modes_text):
+            if x % 2 == 0:
+                row += 7
+                self.WIN.blit(game_mode_text, (left_side_text - game_mode_text.get_width()/2, self.HEIGHT / 5 + row * game_mode_text.get_height()))
+            else:
+                self.WIN.blit(game_mode_text, (right_side_text - game_mode_text.get_width()/2, self.HEIGHT / 5 + row * game_mode_text.get_height()))
+        for button in self.game_modes_buttons:
+            self.WIN.blit(*button)
 
-        self.WIN.blit(self.game_mode_text, (self.right_site_center - self.game_mode_text.get_width()/2, self.HEIGHT / 5 + 10))
+        self.WIN.blit(self.game_mode_text, (self.right_site_center - self.game_mode_text.get_width()/2, self.HEIGHT / 5 + 15))
+
+        if self.run_status['show_bar']:
+            player_limit_text = self.MINI_FONT.render('Players limit', True, self.BLACK)
+            self.WIN.blit(player_limit_text, (self.right_site_center - player_limit_text.get_width()/2, self.HEIGHT/2 + self.HEIGHT/4.5 - 35))
+            self.WIN.blit(self.player_limit_bar_s, self.player_limit_bar_bg)
+            pygame.draw.rect(self.WIN, self.REDDISH, self.choosen_limit_bar)
+            for x, tab in enumerate(self.player_limit_tabs):
+                pygame.draw.rect(self.WIN, self.BLACK, tab)
+                self.WIN.blit(self.MINI_FONT.render(str(x + 2), True, self.BLACK), (self.right_site_center - 125 + 30 * x, self.HEIGHT/2 + self.HEIGHT/4.5 + 25))
 
         if server_status == 'CLOSED':
             pygame.draw.rect(self.WIN, self.RED, self.con_btn)
@@ -162,9 +204,9 @@ class Window:
             pygame.draw.rect(self.WIN, self.GOLD, self.con_btn)
 
         if self.game.game_type == 'SANDBOX':
-            self.WIN.blit(self.RESET_TEXT, (self.right_site_center - self.RESET_TEXT.get_width() / 2, self.HEIGHT - self.HEIGHT / 4 + self.RESET_TEXT.get_height() / 2))
+            self.WIN.blit(self.RESET_TEXT, (self.right_site_center - self.RESET_TEXT.get_width() / 2, self.HEIGHT - self.HEIGHT / 5 + self.RESET_TEXT.get_height() / 2))
         else:
-            self.WIN.blit(self.CON_TEXT, (self.right_site_center - self.CON_TEXT.get_width() / 2, self.HEIGHT - self.HEIGHT / 4 + self.CON_TEXT.get_height() / 2))
+            self.WIN.blit(self.CON_TEXT, (self.right_site_center - self.CON_TEXT.get_width() / 2, self.HEIGHT - self.HEIGHT / 5 + self.CON_TEXT.get_height() / 2))
         if self.run_status['exit_clicked']:
             pygame.draw.rect(self.WIN, self.GREY, self.exit_btn)
         else:
@@ -226,20 +268,25 @@ class Window:
                 run = False
 
             if pygame.mouse.get_pressed()[0] and not self.clicked:   # TODO: reset clicks when clicked outside of any button
+                for game_type_manage in ((_[1], self.game_modes[x]) for x, _ in enumerate(self.game_modes_buttons[1:])):
+                    if game_type_manage[0].contains(pygame.Rect(pygame.mouse.get_pos(), (1, 1))):
+                        if game_type_manage[1] == 'GO NATIONS':
+                            self.run_status['show_bar'] = True
+                            self.game = Game(game_type_manage[1], 10)
+                        else:
+                            self.run_status['show_bar'] = False
+                            self.game = Game(game_type_manage[1])
                 if self.con_btn.contains(pygame.Rect(pygame.mouse.get_pos(), (1, 1))):
                     self.clicked = True
                     self.run_status['con_clicked'] = True
                     if self.game.game_type == 'SANDBOX':
                         self.game.setup_sandbox()
                     else:
-                        return 'connect', game_type
+                        return 'connect', [game_type, self.game.players_limit]
                 if self.exit_btn.contains(pygame.Rect(pygame.mouse.get_pos(), (1, 1))):
                     self.clicked = True
                     self.run_status['exit_clicked_clicked'] = True
                     return 'exit', True
-                if self.game_mode_btn.contains(pygame.Rect(pygame.mouse.get_pos(), (1, 1))):
-                    self.clicked = True
-                    self.run_status['game_mode_clicked'] = not self.run_status['game_mode_clicked']
                 for i, row in enumerate(self.game.tiles):
                     for j, tile in enumerate(row):
                         tile = pygame.Rect((j * self.game.tile_size + self.board_margin_left, i * self.game.tile_size + self.board_margin_top), (self.game.tile_size, self.game.tile_size))
@@ -254,7 +301,7 @@ class Window:
                                 return 'move', [i + 1, j]
                             elif corner == 3:
                                 return 'move', [i + 1, j + 1]
-            elif self.clicked:
+            elif ev.type == pygame.MOUSEBUTTONUP:
                 self.clicked = False
 
             if pygame.mouse.get_pressed()[2]:
@@ -279,5 +326,11 @@ class Window:
         if move[0] == 'DEL':
             self.game.remove_move(move[1])
             self.last_move = []
+
+        if server_status == 'CONNECTED':
+            self.run_status['connected'] = True
+
+        if server_status == 'GAME_END':
+            self.run_status['connected'] = False
 
         return 'run', run
