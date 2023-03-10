@@ -1,19 +1,23 @@
 class Game:
-    def __init__(self, game_type, players_limit = 2):
+    def __init__(self, game_type, players_limit = 2, tiles_ammount = 18):
         self.tiles = None
         self.tile_points = None
         self.hand_points = None
         self.empty_groups = None
         self.tile_size = None
         self.tiles_ammount = None
+        self.time = False
 
         self.game_type = game_type
         self.moves = 0
 
         if self.game_type == 'SANDBOX':
             self.setup_sandbox()
-        elif self.game_type in ['GO | 2', 'GO | 5', 'GO | 10', 'GO | 30']:
-            self.players_limit = 2
+        elif self.game_type == 'GO':
+            self.setup_go(False, tiles_ammount)
+        elif self.game_type in ['GO | 5', 'GO | 10', 'GO | 30']:
+            time = self.game_type.split('| ')[1]
+            self.setup_go(int(time), tiles_ammount)
         elif self.game_type == 'GO NATIONS':
             self.setup_go_nations(players_limit)
 
@@ -33,6 +37,17 @@ class Game:
         self.hand_points = [0 for _ in range(10)]
         self.tile_points = [0 for _ in range(10)]
         self.tiles_ammount = 32
+        self.tiles = [[-1 for j in range(self.tiles_ammount + 1)]
+                      for i in range(self.tiles_ammount + 1)]
+        self.tile_size = 48 * 18 / self.tiles_ammount
+
+    def setup_go(self, time, tiles_ammount):
+        self.time = time
+        self.players_limit = 2
+        self.empty_groups = []
+        self.hand_points = [0 for _ in range(10)]
+        self.tile_points = [0 for _ in range(10)]
+        self.tiles_ammount = tiles_ammount
         self.tiles = [[-1 for j in range(self.tiles_ammount + 1)]
                       for i in range(self.tiles_ammount + 1)]
         self.tile_size = 48 * 18 / self.tiles_ammount

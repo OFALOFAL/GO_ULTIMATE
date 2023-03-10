@@ -40,6 +40,7 @@ class Window:
         self.right_site_center = (self.WIDTH + self.WIDTH - self.WIDTH / 4 - 5) / 2 - self.board_margin_right / 2
         self.con_btn_pos = (self.right_site_center - 100, self.HEIGHT - self.HEIGHT / 5)
         self.con_btn = pygame.Rect(self.con_btn_pos, (200, 75))
+        self.create_btn = pygame.Rect((self.con_btn_pos[0]+100, self.con_btn_pos[1]), (100, 75))
 
         self.EXIT_TEXT = self.SMALL_FONT.render('EXIT', True, self.BLACK)
         self.exit_margin_right = 0
@@ -79,7 +80,7 @@ class Window:
         self.right_border_s.set_alpha(200)
         self.right_border_s.fill(self.WHITE)
 
-        self.game_modes = ['GO | 2', 'GO | 5', 'GO | 10', 'GO | 30', 'GO NATIONS', 'SANDBOX']
+        self.game_modes = ['GO', 'GO | 5', 'GO | 10', 'GO | 30', 'GO NATIONS', 'SANDBOX']
         self.game_modes_text = [self.SMALL_FONT_2.render(name, True, self.GOLD) for name in self.game_modes]
         top_surface = pygame.Surface((300, 50))
         top_surface.set_alpha(50)
@@ -108,7 +109,10 @@ class Window:
         self.player_limit_bar_s.fill(self.LIGHT_GREY)
         self.player_limit_bar_bg = pygame.Rect((self.right_site_center - 150, self.HEIGHT/2 + self.HEIGHT/4.5), (300, 10))
         self.player_limit_tabs = [pygame.Rect((self.right_site_center - 125 + 30 * x, self.HEIGHT/2 + self.HEIGHT/4.5 - 10), (10, 30)) for x in range(9)]
-        self.choosen_limit_bar = pygame.Rect((self.right_site_center - 127, self.HEIGHT/2 + self.HEIGHT/4.5 - 12), (14, 34))
+        self.choosen_limit_bar = pygame.Rect((self.right_site_center - 127 + 30 * 8, self.HEIGHT/2 + self.HEIGHT/4.5 - 12), (14, 34))
+        self.choosen_limit = 10
+
+        self.choosen_board_size = 18
 
         self.BG_IMG = pygame.transform.scale(pygame.image.load(os.path.join('Assets', 'BG_1.png')), (self.WIDTH, self.HEIGHT))
         self.colors = [self.BLACK, self.WHITE]
@@ -125,50 +129,52 @@ class Window:
                 valid = True
             self.colors.append(color)
         self.currently_placing = 0
-        self.run_status = {'con_clicked': False, 'exit_clicked': False, 'go_clicked': False, 'show_bar': False, 'connected': False}
+        self.run_status = {'con_clicked': False, 'create_clicked': False, 'exit_clicked': False, 'go_clicked': False, 'show_bar': False, 'connected': False}
         self.last_move = []
         self.clicked = False
 
     def draw(self, server_status, run_status):
         self.WIN.blit(self.BG_IMG, (0, 0))
         self.WIN.blit(self.right_border_s, self.right_border)
-        self.WIN.blit(self.SCORE_TABLE, (10, self.board_margin_top))
 
-        for line in self.score_horizontal_lines:
-            pygame.draw.rect(self.WIN, self.BLACK, line)
+        if self.game.game_type == 'SANDBOX':
+            self.WIN.blit(self.SCORE_TABLE, (10, self.board_margin_top))
 
-        for line in self.score_vertical_lines:
-            pygame.draw.rect(self.WIN, self.BLACK, line)
+            for line in self.score_horizontal_lines:
+                pygame.draw.rect(self.WIN, self.BLACK, line)
 
-        for x, color in enumerate(self.colors):
-            pygame.draw.rect(self.WIN, self.GREY,
-                                pygame.Rect((21, self.board_margin_top + 30 + 27 + (x + 1) * ((self.HEIGHT - 2 * self.board_margin_top - 20)/10) -
-                                             ((self.HEIGHT - 2 * self.board_margin_top - 20)/10)),
-                                (34, 34))
-                             )
-            pygame.draw.rect(self.WIN, color,
-                                pygame.Rect((23, self.board_margin_top + 30 + 29 + (x + 1) * ((self.HEIGHT - 2 * self.board_margin_top - 20)/10) -
-                                             ((self.HEIGHT - 2 * self.board_margin_top - 20)/10)),
-                                (30, 30))
-                             )
+            for line in self.score_vertical_lines:
+                pygame.draw.rect(self.WIN, self.BLACK, line)
 
-        self.WIN.blit(self.SCORE_TEXT_1, (87, self.board_margin_top + 1))
-        self.WIN.blit(self.SCORE_TEXT_2, (78, self.board_margin_top + self.SCORE_TEXT_1.get_height()))
-        self.WIN.blit(self.SCORE_TEXT_3, (24, self.board_margin_top + self.SCORE_TEXT_2.get_height()/2 + 1))
+            for x, color in enumerate(self.colors):
+                pygame.draw.rect(self.WIN, self.GREY,
+                                    pygame.Rect((21, self.board_margin_top + 30 + 27 + (x + 1) * ((self.HEIGHT - 2 * self.board_margin_top - 20)/10) -
+                                                 ((self.HEIGHT - 2 * self.board_margin_top - 20)/10)),
+                                    (34, 34))
+                                 )
+                pygame.draw.rect(self.WIN, color,
+                                    pygame.Rect((23, self.board_margin_top + 30 + 29 + (x + 1) * ((self.HEIGHT - 2 * self.board_margin_top - 20)/10) -
+                                                 ((self.HEIGHT - 2 * self.board_margin_top - 20)/10)),
+                                    (30, 30))
+                                 )
 
-        for x, tile_points in enumerate(self.game.tile_points):
-            text = self.SMALL_FONT.render(str(tile_points), True, self.BLACK)
-            self.WIN.blit(text,
-                          (100 - text.get_width()/2, self.board_margin_top + 25 + 35 + (x + 1) * ((self.HEIGHT - 2 * self.board_margin_top - 20)/10) -
-                                             ((self.HEIGHT - 2 * self.board_margin_top - 20)/10))
-                          )
+            self.WIN.blit(self.SCORE_TEXT_1, (87, self.board_margin_top + 1))
+            self.WIN.blit(self.SCORE_TEXT_2, (78, self.board_margin_top + self.SCORE_TEXT_1.get_height()))
+            self.WIN.blit(self.SCORE_TEXT_3, (24, self.board_margin_top + self.SCORE_TEXT_2.get_height()/2 + 1))
 
-        for x, hand_points in enumerate(self.game.hand_points):
-            text = self.SMALL_FONT.render(str(hand_points), True, self.BLACK)
-            self.WIN.blit(text,
-                          (155 - text.get_width()/2, self.board_margin_top + 25 + 35 + (x + 1) * ((self.HEIGHT - 2 * self.board_margin_top - 20)/10) -
-                                             ((self.HEIGHT - 2 * self.board_margin_top - 20)/10))
-                          )
+            for x, tile_points in enumerate(self.game.tile_points):
+                text = self.SMALL_FONT.render(str(tile_points), True, self.BLACK)
+                self.WIN.blit(text,
+                              (100 - text.get_width()/2, self.board_margin_top + 25 + 35 + (x + 1) * ((self.HEIGHT - 2 * self.board_margin_top - 20)/10) -
+                                                 ((self.HEIGHT - 2 * self.board_margin_top - 20)/10))
+                              )
+
+            for x, hand_points in enumerate(self.game.hand_points):
+                text = self.SMALL_FONT.render(str(hand_points), True, self.BLACK)
+                self.WIN.blit(text,
+                              (155 - text.get_width()/2, self.board_margin_top + 25 + 35 + (x + 1) * ((self.HEIGHT - 2 * self.board_margin_top - 20)/10) -
+                                                 ((self.HEIGHT - 2 * self.board_margin_top - 20)/10))
+                              )
 
 
         left_side_text = self.right_site_center - 65
@@ -196,15 +202,45 @@ class Window:
                 pygame.draw.rect(self.WIN, self.BLACK, tab)
                 self.WIN.blit(self.MINI_FONT.render(str(x + 2), True, self.BLACK), (self.right_site_center - 125 + 30 * x, self.HEIGHT/2 + self.HEIGHT/4.5 + 25))
 
-        if server_status == 'CLOSED':
-            pygame.draw.rect(self.WIN, self.RED, self.con_btn)
-        elif self.run_status['con_clicked']:
-            pygame.draw.rect(self.WIN, self.GREY, self.con_btn)
+        if not self.game.game_type == 'GO NATIONS':
+            self.con_btn.width = 200
+            self.create_btn.width = 0
+            if self.game.game_type == 'SANDBOX':
+                if self.run_status['con_clicked']:
+                    pygame.draw.rect(self.WIN, self.GREY, self.con_btn)
+                else:
+                    pygame.draw.rect(self.WIN, self.GOLD, self.con_btn)
+            else:
+                if server_status == 'CLOSED':
+                    pygame.draw.rect(self.WIN, self.RED, self.con_btn)
+                elif self.run_status['con_clicked']:
+                    pygame.draw.rect(self.WIN, self.GREY, self.con_btn)
+                else:
+                    pygame.draw.rect(self.WIN, self.GOLD, self.con_btn)
         else:
-            pygame.draw.rect(self.WIN, self.GOLD, self.con_btn)
+            self.con_btn.width = 100
+            self.create_btn.width = 100
+            if server_status == 'CLOSED':
+                pygame.draw.rect(self.WIN, self.RED, self.con_btn)
+                pygame.draw.rect(self.WIN, self.RED, self.create_btn)
+            elif self.run_status['con_clicked']:
+                pygame.draw.rect(self.WIN, self.GREY, self.con_btn)
+                pygame.draw.rect(self.WIN, self.RED, self.create_btn)
+            elif self.run_status['create_clicked']:
+                pygame.draw.rect(self.WIN, self.RED, self.con_btn)
+                pygame.draw.rect(self.WIN, self.GREY, self.create_btn)
+            else:
+                pygame.draw.rect(self.WIN, self.GOLD, self.con_btn)
+                pygame.draw.rect(self.WIN, self.GOLD, self.create_btn)
+            pygame.draw.rect(self.WIN, self.BLACK, pygame.Rect((self.right_site_center - 1, self.con_btn.y), (2, self.con_btn.height)))
 
         if self.game.game_type == 'SANDBOX':
             self.WIN.blit(self.RESET_TEXT, (self.right_site_center - self.RESET_TEXT.get_width() / 2, self.HEIGHT - self.HEIGHT / 5 + self.RESET_TEXT.get_height() / 2))
+        elif self.game.game_type == 'GO NATIONS':
+            con = self.SMALL_FONT.render('Connect', True, self.BLACK)
+            self.WIN.blit(con, ((self.con_btn.x + self.con_btn.x + self.con_btn.width)/2 - con.get_width() / 2, self.HEIGHT - self.HEIGHT / 5 + con.get_height()))
+            create = self.SMALL_FONT.render('Create', True, self.BLACK)
+            self.WIN.blit(create, ((self.create_btn.x + self.create_btn.x + self.create_btn.width)/2 - create.get_width() / 2, self.HEIGHT - self.HEIGHT / 5 + create.get_height()))
         else:
             self.WIN.blit(self.CON_TEXT, (self.right_site_center - self.CON_TEXT.get_width() / 2, self.HEIGHT - self.HEIGHT / 5 + self.CON_TEXT.get_height() / 2))
         if self.run_status['exit_clicked']:
@@ -266,31 +302,42 @@ class Window:
 
             if ev.type == pygame.QUIT:
                 run = False
-
-            if pygame.mouse.get_pressed()[0] and not self.clicked:   # TODO: reset clicks when clicked outside of any button
+            
+            mouse = pygame.Rect(pygame.mouse.get_pos(), (1, 1))
+            if pygame.mouse.get_pressed()[0] and not self.clicked:
                 for game_type_manage in ((_[1], self.game_modes[x]) for x, _ in enumerate(self.game_modes_buttons[1:])):
-                    if game_type_manage[0].contains(pygame.Rect(pygame.mouse.get_pos(), (1, 1))):
+                    if game_type_manage[0].contains(mouse):
                         if game_type_manage[1] == 'GO NATIONS':
                             self.run_status['show_bar'] = True
-                            self.game = Game(game_type_manage[1], 10)
+                            self.game = Game(game_type_manage[1], players_limit=self.choosen_limit)
                         else:
                             self.run_status['show_bar'] = False
-                            self.game = Game(game_type_manage[1])
-                if self.con_btn.contains(pygame.Rect(pygame.mouse.get_pos(), (1, 1))):
+                            self.game = Game(game_type_manage[1], tiles_ammount=self.choosen_board_size)
+                if self.run_status['show_bar']:
+                    for x, tab in enumerate(self.player_limit_tabs):
+                        if tab.contains(mouse):
+                            self.choosen_limit = x + 2
+                            self.choosen_limit_bar.x = self.right_site_center - 127 + 30 * x
+                            self.game = Game('GO NATIONS', players_limit=self.choosen_limit)
+                if self.con_btn.contains(mouse):
                     self.clicked = True
                     self.run_status['con_clicked'] = True
                     if self.game.game_type == 'SANDBOX':
                         self.game.setup_sandbox()
                     else:
-                        return 'connect', [game_type, self.game.players_limit]
-                if self.exit_btn.contains(pygame.Rect(pygame.mouse.get_pos(), (1, 1))):
+                        return 'connect', [game_type, self.game.players_limit, self.game.time]
+                if self.create_btn.contains(mouse):
+                    self.clicked = True
+                    self.run_status['create_clicked'] = True
+                    return 'create' [game_type, self.game.players_limit, self.game.time]
+                if self.exit_btn.contains(mouse):
                     self.clicked = True
                     self.run_status['exit_clicked_clicked'] = True
                     return 'exit', True
                 for i, row in enumerate(self.game.tiles):
                     for j, tile in enumerate(row):
                         tile = pygame.Rect((j * self.game.tile_size + self.board_margin_left, i * self.game.tile_size + self.board_margin_top), (self.game.tile_size, self.game.tile_size))
-                        if tile.contains(pygame.Rect(pygame.mouse.get_pos(), (1, 1))):
+                        if tile.contains(mouse):
                             self.clicked = True
                             corner = self.get_clicked_corner(tile)
                             if corner == 0:
@@ -303,12 +350,13 @@ class Window:
                                 return 'move', [i + 1, j + 1]
             elif ev.type == pygame.MOUSEBUTTONUP:
                 self.clicked = False
+                self.run_status['con_clicked'] = False
 
             if pygame.mouse.get_pressed()[2]:
                 for i, row in enumerate(self.game.tiles):
                     for j, tile in enumerate(row):
                         tile = pygame.Rect((j * self.game.tile_size + self.board_margin_left, i * self.game.tile_size + self.board_margin_top), (self.game.tile_size, self.game.tile_size))
-                        if tile.contains(pygame.Rect(pygame.mouse.get_pos(), (1, 1))):
+                        if tile.contains(mouse):
                             corner = self.get_clicked_corner(tile)
                             if corner ==  0:
                                 return 'DEL', [i, j]

@@ -60,7 +60,7 @@ if __name__ == '__main__':
     server_status = ''
     turn = -1
 
-    def connect_thread(players_limit):
+    def connect_thread(players_limit, time):
         global server_status
         global turn
         if not connect(network, game_type, IP_ADDR):
@@ -93,8 +93,8 @@ if __name__ == '__main__':
             case 'run':
                 run = value
             case 'connect':
-                game_type, players_limit = value
-                start_new_thread(connect_thread, (players_limit, ))
+                game_type, players_limit, time = value
+                start_new_thread(connect_thread, (players_limit, time))
             case 'move':
                 if game_type == 'SANDBOX':
                     move = ['MOVE', value]
