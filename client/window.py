@@ -31,7 +31,7 @@ class Window:
         self.GOLD = (212, 175, 55)
         self.REDDISH = (255, 61, 13)
 
-        self.board_margin_left = 200
+        self.board_margin_left = 250
         self.board_margin_top = 44
         self.board_margin_right = self.board_margin_top
 
@@ -108,11 +108,13 @@ class Window:
         self.player_limit_bar_s.set_alpha(200)
         self.player_limit_bar_s.fill(self.LIGHT_GREY)
         self.player_limit_bar_bg = pygame.Rect((self.right_site_center - 150, self.HEIGHT/2 + self.HEIGHT/4.5), (300, 10))
-        self.player_limit_tabs = [pygame.Rect((self.right_site_center - 125 + 30 * x, self.HEIGHT/2 + self.HEIGHT/4.5 - 10), (10, 30)) for x in range(9)]
-        self.choosen_limit_bar = pygame.Rect((self.right_site_center - 127 + 30 * 8, self.HEIGHT/2 + self.HEIGHT/4.5 - 12), (14, 34))
+        self.player_limit_tabs = [pygame.Rect((self.right_site_center - 125 + 30 * x, self.HEIGHT/2 + self.HEIGHT/4.5 - 10), (12, 30)) for x in range(9)]
+        self.choosen_limit_bar = pygame.Rect((self.right_site_center - 127 + 30 * 8, self.HEIGHT/2 + self.HEIGHT/4.5 - 12), (16, 34))
         self.choosen_limit = 10
 
         self.choosen_board_size = 18
+        self.choosen_board_bar = pygame.Rect((self.right_site_center - 75 + 100 - 2, self.HEIGHT/2 + self.HEIGHT/4.5 - 12), (44, 44))
+        self.board_size_tabs = [pygame.Rect((self.right_site_center - 75 + 100 * x, self.HEIGHT/2 + self.HEIGHT/4.5 - 10), (40, 40)) for x in range(2)]
 
         self.BG_IMG = pygame.transform.scale(pygame.image.load(os.path.join('Assets', 'BG_1.png')), (self.WIDTH, self.HEIGHT))
         self.colors = [self.BLACK, self.WHITE]
@@ -132,6 +134,10 @@ class Window:
         self.run_status = {'con_clicked': False, 'create_clicked': False, 'exit_clicked': False, 'go_clicked': False, 'show_bar': False, 'connected': False}
         self.last_move = []
         self.clicked = False
+        self.clock = ((pygame.Rect((self.right_site_center - 200 - 5 - 150, self.HEIGHT - self.board_margin_top - 40), (150, 40)), self.BLACK),
+                      (pygame.Rect((self.right_site_center - 200 - 5 - 145, self.HEIGHT - self.board_margin_top - 36), (140, 32)), self.LIGHT_GREY))
+        self.enemy_clock = ((pygame.Rect((self.right_site_center - 200 - 5 - 150, self.board_margin_top), (150, 40)), self.BLACK),
+                      (pygame.Rect((self.right_site_center - 200 - 5 - 145, self.board_margin_top + 4), (140, 32)), self.LIGHT_GREY))
 
     def draw(self, server_status, run_status):
         self.WIN.blit(self.BG_IMG, (0, 0))
@@ -175,7 +181,18 @@ class Window:
                               (155 - text.get_width()/2, self.board_margin_top + 25 + 35 + (x + 1) * ((self.HEIGHT - 2 * self.board_margin_top - 20)/10) -
                                                  ((self.HEIGHT - 2 * self.board_margin_top - 20)/10))
                               )
-
+        elif self.game.game_type not in ['GO', 'GO NATIONS']:
+            for piece in self.clock:
+                pygame.draw.rect(self.WIN, piece[1], piece[0])
+            for piece in self.enemy_clock:
+                pygame.draw.rect(self.WIN, piece[1], piece[0])
+            if not self.run_status['connected']:
+                time = self.FONT_2.render(str(self.game.time) + ' : 00', True, self.BLACK)
+                self.WIN.blit(time, ((self.enemy_clock[0][0].x * 2 + self.enemy_clock[0][0].width) / 2 - time.get_width() / 2,
+                                     (self.enemy_clock[0][0].y * 2 + self.enemy_clock[0][0].height) / 2 - time.get_height() / 2))
+                self.WIN.blit(time,((self.clock[0][0].x * 2 + self.clock[0][0].width) / 2 - time.get_width()/2,
+                                    (self.clock[0][0].y * 2 + self.clock[0][0].height) / 2 - time.get_height()/2))
+            # TODO: draw accual time time
 
         left_side_text = self.right_site_center - 65
         right_side_text = self.right_site_center + 75
@@ -194,6 +211,7 @@ class Window:
         self.WIN.blit(self.game_mode_text, (self.right_site_center - self.game_mode_text.get_width()/2, self.HEIGHT / 5 + 15))
 
         if self.run_status['show_bar']:
+            self.player_limit_bar_bg.y = self.HEIGHT/2 + self.HEIGHT/4.5
             player_limit_text = self.MINI_FONT.render('Players limit', True, self.BLACK)
             self.WIN.blit(player_limit_text, (self.right_site_center - player_limit_text.get_width()/2, self.HEIGHT/2 + self.HEIGHT/4.5 - 35))
             self.WIN.blit(self.player_limit_bar_s, self.player_limit_bar_bg)
@@ -201,6 +219,18 @@ class Window:
             for x, tab in enumerate(self.player_limit_tabs):
                 pygame.draw.rect(self.WIN, self.BLACK, tab)
                 self.WIN.blit(self.MINI_FONT.render(str(x + 2), True, self.BLACK), (self.right_site_center - 125 + 30 * x, self.HEIGHT/2 + self.HEIGHT/4.5 + 25))
+
+        if self.game.game_type in ['GO', 'GO | 5', 'GO | 10', 'GO | 30', 'SANDBOX']:
+            self.player_limit_bar_bg.y = self.HEIGHT / 2 + self.HEIGHT / 4.5 + 5
+            board_size_text = self.MINI_FONT.render('Board size', True, self.BLACK)
+            self.WIN.blit(board_size_text, (self.right_site_center - board_size_text.get_width() / 2, self.HEIGHT / 2 + self.HEIGHT / 4.5 - 35))
+            self.WIN.blit(self.player_limit_bar_s, self.player_limit_bar_bg)
+            sizes = ['9x9', '19x19']
+            pygame.draw.rect(self.WIN, self.REDDISH, self.choosen_board_bar)
+            for x, tab in enumerate(self.board_size_tabs):
+                pygame.draw.rect(self.WIN, self.BLACK, tab)
+                text = self.MINI_FONT.render(sizes[x], True, self.WHITE)
+                self.WIN.blit(text, ((tab.x * 2 + tab.width)/2 - text.get_width()/2, (tab.y * 2 + tab.height)/2 - text.get_height()/2 - 2))
 
         if not self.game.game_type == 'GO NATIONS':
             self.con_btn.width = 200
@@ -261,11 +291,11 @@ class Window:
         for i, row in enumerate(self.game.tiles):
             for j, move in enumerate(row):
                 if move != -1:
-                    pygame.draw.rect(self.WIN, self.colors[move], pygame.Rect(
-                        (j * self.game.tile_size + self.board_margin_left - (self.game.tiles_ammount / 0.9) / 2,
-                         i * self.game.tile_size + self.board_margin_top - (self.game.tiles_ammount / 0.9) / 2),
-                                                                       (self.game.tiles_ammount / 0.9, self.game.tiles_ammount / 0.9)
-                    ))
+                    pygame.draw.circle(self.WIN, self.colors[move],
+                        (j * self.game.tile_size + (self.game.tile_size / 4) + self.board_margin_left - (1/self.game.tiles_ammount * 450) / 2,
+                         i * self.game.tile_size + (self.game.tile_size / 4) + self.board_margin_top - (1/self.game.tiles_ammount * 450) / 2),
+                        1/self.game.tiles_ammount * 320
+                    )
 
         pygame.display.update()
 
@@ -286,7 +316,6 @@ class Window:
         self.draw(server_status, self.run_status)
 
         for ev in pygame.event.get():
-
             if ev.type == pygame.MOUSEWHEEL:
                 if self.game.game_type == game_type == 'SANDBOX':
                     if ev.y > 1:
@@ -307,6 +336,7 @@ class Window:
             if pygame.mouse.get_pressed()[0] and not self.clicked:
                 for game_type_manage in ((_[1], self.game_modes[x]) for x, _ in enumerate(self.game_modes_buttons[1:])):
                     if game_type_manage[0].contains(mouse):
+                        self.clicked = True
                         if game_type_manage[1] == 'GO NATIONS':
                             self.run_status['show_bar'] = True
                             self.game = Game(game_type_manage[1], players_limit=self.choosen_limit)
@@ -316,20 +346,29 @@ class Window:
                 if self.run_status['show_bar']:
                     for x, tab in enumerate(self.player_limit_tabs):
                         if tab.contains(mouse):
+                            self.clicked = True
                             self.choosen_limit = x + 2
                             self.choosen_limit_bar.x = self.right_site_center - 127 + 30 * x
                             self.game = Game('GO NATIONS', players_limit=self.choosen_limit)
+                if self.game.game_type in ['GO', 'GO | 5', 'GO | 10', 'GO | 30', 'SANDBOX']:
+                    sizes = [8, 18]
+                    for x, tab in enumerate(self.board_size_tabs):
+                        if tab.contains(mouse):
+                            self.clicked = True
+                            self.choosen_board_bar.x = tab.x - 2
+                            self.choosen_board_size = sizes[x]
+                            self.game = Game(self.game.game_type, tiles_ammount=self.choosen_board_size)
                 if self.con_btn.contains(mouse):
                     self.clicked = True
                     self.run_status['con_clicked'] = True
                     if self.game.game_type == 'SANDBOX':
-                        self.game.setup_sandbox()
+                        self.game.setup_sandbox(self.game.tiles_ammount)
                     else:
                         return 'connect', [game_type, self.game.players_limit, self.game.time]
                 if self.create_btn.contains(mouse):
                     self.clicked = True
                     self.run_status['create_clicked'] = True
-                    return 'create' [game_type, self.game.players_limit, self.game.time]
+                    return 'create', [game_type, self.game.players_limit, self.game.time]
                 if self.exit_btn.contains(mouse):
                     self.clicked = True
                     self.run_status['exit_clicked_clicked'] = True
@@ -359,13 +398,13 @@ class Window:
                         if tile.contains(mouse):
                             corner = self.get_clicked_corner(tile)
                             if corner ==  0:
-                                return 'DEL', [i, j]
+                                return 'del', [i, j]
                             if corner ==  1:
-                                return 'DEL', [i, j + 1]
+                                return 'del', [i, j + 1]
                             if corner ==  2:
-                                return 'DEL', [i + 1, j]
+                                return 'del', [i + 1, j]
                             if corner ==  3:
-                                return 'DEL', [i + 1, j + 1]
+                                return 'del', [i + 1, j + 1]
 
         if move[0] == 'MOVE':
             if self.last_move != move[1]:
@@ -374,11 +413,16 @@ class Window:
         if move[0] == 'DEL':
             self.game.remove_move(move[1])
             self.last_move = []
+        if move == 'CHANGE_MOVE':
+            pass
 
         if server_status == 'CONNECTED':
             self.run_status['connected'] = True
 
         if server_status == 'GAME_END':
             self.run_status['connected'] = False
+
+        if server_status == 'END_GAME_REQ':
+            pass    # TODO: change to ask player if he wants to end the game
 
         return 'run', run

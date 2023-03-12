@@ -1,5 +1,6 @@
 class Game:
     def __init__(self, game_type, players_limit = 2, tiles_ammount = 18):
+        self.players_limit = None
         self.tiles = None
         self.tile_points = None
         self.hand_points = None
@@ -12,7 +13,7 @@ class Game:
         self.moves = 0
 
         if self.game_type == 'SANDBOX':
-            self.setup_sandbox()
+            self.setup_sandbox(tiles_ammount)
         elif self.game_type == 'GO':
             self.setup_go(False, tiles_ammount)
         elif self.game_type in ['GO | 5', 'GO | 10', 'GO | 30']:
@@ -21,12 +22,12 @@ class Game:
         elif self.game_type == 'GO NATIONS':
             self.setup_go_nations(players_limit)
 
-    def setup_sandbox(self):
+    def setup_sandbox(self, tiles_ammount):
         self.players_limit = 10
         self.empty_groups = []
         self.hand_points = [0 for _ in range(10)]
         self.tile_points = [0 for _ in range(10)]
-        self.tiles_ammount = 18
+        self.tiles_ammount = tiles_ammount
         self.tiles = [[-1 for j in range(self.tiles_ammount + 1)]
                       for i in range(self.tiles_ammount + 1)]
         self.tile_size = 48 * 18 / self.tiles_ammount
@@ -60,9 +61,12 @@ class Game:
     def add_move(self, move):
         valid = False
         if self.game_type == 'SANDBOX':
-            if self.tiles[move[1][0]][move[1][1]] == -1:
-                valid = self.update_board(self.tiles.copy(), move)
-                self.count_tile_points()
+            try:
+                if self.tiles[move[1][0]][move[1][1]] == -1:
+                    valid = self.update_board(self.tiles.copy(), move)
+                    self.count_tile_points()
+            except IndexError:
+                pass
         if valid:
             self.moves += 1
         return valid
@@ -149,7 +153,7 @@ class Game:
             visited.add(move)
             adj_moves = [(move[0] - 1, move[1]), (move[0] + 1, move[1]), (move[0], move[1] - 1), (move[0], move[1] + 1)]
             for adj in adj_moves:
-                if adj in visited or adj[0] in [-1, 19] or adj[1] in [-1, 19]:
+                if adj in visited or adj[0] in [-1, self.tiles_ammount+1] or adj[1] in [-1, self.tiles_ammount+1]:
                     continue
 
                 adj_color = tiles[adj[0]][adj[1]]

@@ -129,7 +129,7 @@ def threaded_client(conn, addr):
                                     continue
                                 try:
                                     lobby.active_turn = next_turn
-                                    response = Response(move=data.move, active_turn=lobby.active_turn, update=True)
+                                    response = Response(move=data.move, active_turn=lobby.active_turn, update=True, times=data.times)
                                     client['conn'].send(pickle.dumps(response))
                                 except ConnectionResetError as e:
                                     if client['role'] == 'HOST' and client['conn'] != conn:
@@ -146,9 +146,9 @@ def threaded_client(conn, addr):
                                     strikes += 1
                             turn = next_turn
                         else:
-                            conn.send(pickle.dumps(Response(addr=addr, change_move_req=True)))   # send invalid move response back to client_del
-                            time.sleep(0.1)   # shadowban not to slow down the server in case of overflow of invalid messages
-                            strikes += 1
+                            for t in data.times:
+                                if t <= 0:
+                                    time_elapsed = True    # TODO: send time end and summary of the game
                     else:
                         server_q_put('turn:', turn, 'got:', data.turn)
 

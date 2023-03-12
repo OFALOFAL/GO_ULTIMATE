@@ -59,10 +59,14 @@ if __name__ == '__main__':
     run = True
     server_status = ''
     turn = -1
+    window_info = None
+    connected = False
 
     def connect_thread(players_limit, time):
         global server_status
         global turn
+        global window_info
+        global connected
         if not connect(network, game_type, IP_ADDR):
             print('Server Closed')
             server_status = 'CLOSED'
@@ -78,18 +82,49 @@ if __name__ == '__main__':
                 except:
                     return
                 start(network)
+                server_status = 'CONNECTED'
+                connected = True
             else:
                 ready = False
                 try:
                     while not ready:
                         wait = wait_for_lobby(network)
                         ready = wait.is_ready
+                    server_status = 'CONNECTED'
+                    connected = True
                 except:
                     return
     move = [False, []]
     while run:
-        variable, value = window.run(run, server_status, game_type, move)
-        match variable:
+        window_info, value = window.run(run, server_status, game_type, move)
+        if connected:
+            response = send_move(network, game_type, value, 0, turn, IP_ADDR)
+            if response is None:
+                run = False
+                move = [True, value]
+                server_status = 'CLOSED'
+            else:
+                try:
+                    response = pickle.loads(response)
+                except TypeError:
+                    break
+                except KeyboardInterrupt:
+                    break
+                except EOFError:
+                    break
+                if not response.change_move_req:
+                    move = [response.move, response.times]
+                else:
+                    move = [not response.change_move_req]
+            if response.end_game_req:
+                server_status = 'END_GAME_REQ'
+            elif response.type['server']['server']:
+                if response.type['server']['host_exit_request']:
+                    network = dissconnect(network)
+                    server_status = 'GAME_END'  # TODO: send summary of the game
+                elif response.type['server']['change_move_request']:
+                    move = 'CHANGE_MOVE'
+        match window_info:
             case 'run':
                 run = value
             case 'connect':
@@ -98,24 +133,10 @@ if __name__ == '__main__':
             case 'move':
                 if game_type == 'SANDBOX':
                     move = ['MOVE', value]
-                else:
-                    response = send_move(network, game_type, value, 0, turn, IP_ADDR)
-                    if response is None:
-                        run = False
-                        move = [True, value]
-                        server_status = 'CLOSED'
-                    else:
-                        try:
-                            response = pickle.loads(response)
-                        except TypeError:
-                            break
-                        except KeyboardInterrupt:
-                            break
-                        except EOFError:
-                            break
-                        move = [not response.change_move_req, value]
-            case 'DEL':
+            case 'del':
                 if game_type == 'SANDBOX':
                     move = ['DEL', value]
+            case 'end_game_req':
+                send_end_game_req(network)
             case 'exit':
                 break

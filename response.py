@@ -77,6 +77,6 @@ class Response:
             self.is_ready = is_ready or client_is_ready
             self.end_game_req = end_game_req
             self.active_turn = active_turn
-            self.board_update = [[[], ]]    # [[place], new sign]
+            self.board_update = [[], ]    # [move, color (in 0-9)]
         else:
             return
