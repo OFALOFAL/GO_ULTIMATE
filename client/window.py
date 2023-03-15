@@ -192,7 +192,7 @@ class Window:
                                      (self.enemy_clock[0][0].y * 2 + self.enemy_clock[0][0].height) / 2 - time.get_height() / 2))
                 self.WIN.blit(time,((self.clock[0][0].x * 2 + self.clock[0][0].width) / 2 - time.get_width()/2,
                                     (self.clock[0][0].y * 2 + self.clock[0][0].height) / 2 - time.get_height()/2))
-            # TODO: draw accual time time
+            # TODO: draw accual time
 
         left_side_text = self.right_site_center - 65
         right_side_text = self.right_site_center + 75
