@@ -3,7 +3,7 @@ class Response:
                  # all:
                  game_type='', move=[], times=[], turn=0, addr='', is_ready=False, end_game_req=False, active_turn=False,
                  # client distinct request:
-                 create_req=False, connect_req=False, start_game_req=False, lobby_wait=False, password='', client_is_ready=False, pause=False,
+                 create_req=False, connect_req=False, start_game_req=False, lobby_wait=False, password='', client_is_ready=False, players_limit = 2, tiles_ammount = 18,
                  # server distinct request:
                  validate_req=False, change_move_req=False, client_status=None, exit_req=False, update=False,
                  # host distinct request:
@@ -23,7 +23,9 @@ class Response:
                 'connect_to_lobby_req': connect_req,
                 'start_game_req': start_game_req,
                 'lobby_wait': lobby_wait,
-                'password': password
+                'password': password,
+                'players_limit': players_limit,
+                'tiles_amount': tiles_ammount
             },
             'server': {
                 'server': validate_req or change_move_req or exit_req or is_ready or update,

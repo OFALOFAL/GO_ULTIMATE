@@ -2,7 +2,7 @@ from game import Game
 from server_message_queue import server_q_put
 
 class Lobby:
-    def __init__(self, client_conn, client_count, game_type, client_id):
+    def __init__(self, client_conn, client_count, game_type, client_id, players_limit, tiles_ammount):
         self.id = client_id
         self.clients = [
             {
@@ -18,7 +18,7 @@ class Lobby:
         self.host = self.clients[0]
         self.client_count = client_count
         self.game_type = game_type
-        self.game = Game(game_type)
+        self.game = Game(game_type, players_limit, tiles_ammount)
         self.ready = False
         self.clients_times = self.game.time
         self.clients_limit = self.game.players_limit

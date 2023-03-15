@@ -14,12 +14,12 @@ def send_move(n: Network, game_type, move, time, turn, addr):
     response = Response(game_type, move=move, times=time, turn=turn, addr=addr, client_is_ready=True)
     return n.send(pickle.dumps(response))
 
-def create(n: Network, game_type, addr):
+def create(n: Network, game_type, addr, players_limit = 2, tiles_ammount = 18):
     n.client.connect(n.addr)
-    response = Response(game_type, create_req=True, addr=addr)
+    response = Response(game_type, create_req=True, addr=addr, players_limit=players_limit, tiles_ammount=tiles_ammount)
     return n.send(pickle.dumps(response))
 
-def connect(n: Network, game_type, addr):
+def connect(n: Network, game_type, addr, players_limit = 2, tiles_ammount = 18):
     try:
         n.client.connect(n.addr)
     except TimeoutError:
@@ -28,7 +28,7 @@ def connect(n: Network, game_type, addr):
         return False
     except OSError:
         return False
-    response = Response(game_type, connect_req=True, addr=addr, password=password)
+    response = Response(game_type, connect_req=True, addr=addr, password=password, players_limit=players_limit, tiles_ammount=tiles_ammount)
     return n.send(pickle.dumps(response))
 
 def dissconnect(n: Network):

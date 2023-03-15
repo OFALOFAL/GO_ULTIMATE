@@ -75,7 +75,7 @@ def threaded_client(conn, addr):
             user_info.create_req = True
 
     if user_info.create_req:
-        lobbies.append(Lobby(conn, 1, user_info.game_type, len(lobbies)))
+        lobbies.append(Lobby(conn, 1, user_info.game_type, len(lobbies), user_info.players_limit, user_info.tiles_ammount))
         lobby = lobbies[-1]
         lobby.active_turn = turn
         conn.send(pickle.dumps(Response(user_info.game_type, addr=addr, turn=turn, host=True, update=True)))   # send clients turn
