@@ -2,7 +2,7 @@ class Response:
     def __init__(self,
                  # all:
                  game_type='', move=[], times=[], turn=0, addr='', is_ready=False, end_game_req=False, active_turn=False,
-                 # client_del distinct request:
+                 # client distinct request:
                  create_req=False, connect_req=False, start_game_req=False, lobby_wait=False, password='', client_is_ready=False, pause=False,
                  # server distinct request:
                  validate_req=False, change_move_req=False, client_status=None, exit_req=False, update=False,
@@ -16,8 +16,8 @@ class Response:
                   or host or wait_for_clients
         self.type = {
             'request': request,
-            'client_del': {
-                'client_del': create_req or connect_req or start_game_req or lobby_wait or client_is_ready or (end_game_req and not update),
+            'client': {
+                'client': create_req or connect_req or start_game_req or lobby_wait or client_is_ready or (end_game_req and not update),
                 'client_addr': addr,
                 'create_new_lobby_req': create_req,
                 'connect_to_lobby_req': connect_req,
@@ -47,13 +47,13 @@ class Response:
             self.type['server']['client_status'] = 'HOST'
         if self.type['server']['client_status'] != 'HOST':
             self.type['host'] = {'host': False}
-        if self.type['client_del']['client_del']:
+        if self.type['client']['client']:
             self.type['server'] = {'server': False}
         elif self.type['server']['server']:
-            self.type['client_del'] = {'client_del': False}
-        if not self.type['server']['server'] and not self.type['client_del']['client_del']:
+            self.type['client'] = {'client': False}
+        if not self.type['server']['server'] and not self.type['client']['client']:
             self.type['server'] = {'server': False}
-            self.type['client_del'] = {'client_del': False}
+            self.type['client'] = {'client': False}
 
         # validate the message
         self.valid = True

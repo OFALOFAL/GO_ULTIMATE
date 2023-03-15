@@ -243,6 +243,8 @@ class Window:
             else:
                 if server_status == 'CLOSED':
                     pygame.draw.rect(self.WIN, self.RED, self.con_btn)
+                elif self.run_status['connected']:
+                    pygame.draw.rect(self.WIN, self.GREEN, self.con_btn)
                 elif self.run_status['con_clicked']:
                     pygame.draw.rect(self.WIN, self.GREY, self.con_btn)
                 else:
@@ -340,6 +342,7 @@ class Window:
                         if game_type_manage[1] == 'GO NATIONS':
                             self.run_status['show_bar'] = True
                             self.game = Game(game_type_manage[1], players_limit=self.choosen_limit)
+                            
                         else:
                             self.run_status['show_bar'] = False
                             self.game = Game(game_type_manage[1], tiles_ammount=self.choosen_board_size)
@@ -363,12 +366,14 @@ class Window:
                     self.run_status['con_clicked'] = True
                     if self.game.game_type == 'SANDBOX':
                         self.game.setup_sandbox(self.game.tiles_ammount)
+                    elif self.run_status['connected']:
+                        return 'disconnect', [self.game.game_type, False, False]
                     else:
-                        return 'connect', [game_type, self.game.players_limit, self.game.time]
+                        return 'connect', [self.game.game_type, self.game.players_limit, self.game.time]
                 if self.create_btn.contains(mouse):
                     self.clicked = True
                     self.run_status['create_clicked'] = True
-                    return 'create', [game_type, self.game.players_limit, self.game.time]
+                    return 'create', [self.game.game_type, self.game.players_limit, self.game.time]
                 if self.exit_btn.contains(mouse):
                     self.clicked = True
                     self.run_status['exit_clicked_clicked'] = True
@@ -418,6 +423,8 @@ class Window:
 
         if server_status == 'CONNECTED':
             self.run_status['connected'] = True
+        elif server_status == 'DISCONNECTED':
+            self.run_status['connected'] = False
 
         if server_status == 'GAME_END':
             self.run_status['connected'] = False

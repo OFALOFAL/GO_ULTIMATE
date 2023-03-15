@@ -67,10 +67,12 @@ if __name__ == '__main__':
         global turn
         global window_info
         global connected
+        print(game_type)
         if not connect(network, game_type, IP_ADDR):
             print('Server Closed')
             server_status = 'CLOSED'
         else:
+            server_status = 'CONNECTED'
             response = pickle.loads(network.get())
             print('Connected to:', response.type['server']['server_addr'], response.turn)
             turn = response.turn
@@ -82,7 +84,6 @@ if __name__ == '__main__':
                 except:
                     return
                 start(network)
-                server_status = 'CONNECTED'
                 connected = True
             else:
                 ready = False
@@ -90,7 +91,6 @@ if __name__ == '__main__':
                     while not ready:
                         wait = wait_for_lobby(network)
                         ready = wait.is_ready
-                    server_status = 'CONNECTED'
                     connected = True
                 except:
                     return
@@ -98,6 +98,7 @@ if __name__ == '__main__':
     while run:
         window_info, value = window.run(run, server_status, game_type, move)
         if connected:
+            print(connected)
             response = send_move(network, game_type, value, 0, turn, IP_ADDR)
             if response is None:
                 run = False
@@ -106,6 +107,7 @@ if __name__ == '__main__':
             else:
                 try:
                     response = pickle.loads(response)
+                    print(move)
                 except TypeError:
                     break
                 except KeyboardInterrupt:
@@ -130,6 +132,9 @@ if __name__ == '__main__':
             case 'connect':
                 game_type, players_limit, time = value
                 start_new_thread(connect_thread, (players_limit, time))
+            case 'disconnect':
+                network = dissconnect(network)
+                server_status = 'DISCONNECTED'
             case 'move':
                 if game_type == 'SANDBOX':
                     move = ['MOVE', value]

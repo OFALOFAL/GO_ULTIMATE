@@ -1,4 +1,4 @@
-from games.game import Game
+from game import Game
 from server_message_queue import server_q_put
 
 class Lobby:
@@ -19,11 +19,9 @@ class Lobby:
         self.client_count = client_count
         self.game_type = game_type
         self.game = Game(game_type)
-        self.game.add_client(client_conn)
         self.ready = False
-        self.clients_times = self.game.clients_times
-        self.clients_status = self.game.clients_status
-        self.clients_limit = self.game.clients_limit
+        self.clients_times = self.game.time
+        self.clients_limit = self.game.players_limit
         self.closed = False
         self.active_turn = 0
 
@@ -38,14 +36,12 @@ class Lobby:
                 'end_game': False
             }
         )
-        self.game.add_client(client_conn)
 
     def remove_client(self, client):
         client -= 1
         self.client_count -= 1
         try:
             self.clients[client] = 0
-            self.game.remove_client(client)
             server_q_put('Removed client_del:', client)
         except IndexError:
             server_q_put('Client at:', client, 'is already deleted!')
