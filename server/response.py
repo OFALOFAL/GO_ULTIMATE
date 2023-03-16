@@ -1,23 +1,24 @@
 class Response:
     def __init__(self,
                  # all:
-                 game_type='', move=[], times=[], turn=0, addr='', is_ready=False, end_game_req=False, active_turn=False,
+                 game_type='', move=[], board=[], times=[], turn=0, addr='', is_ready=False, end_game_req=False, active_turn=False,
                  # client distinct request:
-                 create_req=False, connect_req=False, start_game_req=False, lobby_wait=False, password='', client_is_ready=False, players_limit = 2, tiles_ammount = 18,
+                 create_req=False, connect_req=False, start_game_req=False, lobby_wait=False, password='', client_is_ready=False, players_limit = 2,
+                 tiles_ammount = 18, game_update_req=False, move_req=False,
                  # server distinct request:
-                 validate_req=False, change_move_req=False, client_status=None, exit_req=False, update=False,
+                 validate_req=False, change_move_req=False, client_status=None, exit_req=False, server_update=False,
                  # host distinct request:
                  host=False, clients=[], ban_clients=[], wait_for_clients=False,
                  ):
         # information distinguished by type
         request = is_ready or end_game_req \
                   or create_req or connect_req or start_game_req or lobby_wait or client_is_ready \
-                  or validate_req or change_move_req or exit_req or update \
-                  or host or wait_for_clients
+                  or validate_req or change_move_req or exit_req or server_update \
+                  or host or wait_for_clients or game_update_req or move_req
         self.type = {
             'request': request,
             'client': {
-                'client': create_req or connect_req or start_game_req or lobby_wait or client_is_ready or (end_game_req and not update),
+                'client': create_req or connect_req or start_game_req or lobby_wait or client_is_ready or (end_game_req and not server_update) or game_update_req or move_req,
                 'client_addr': addr,
                 'create_new_lobby_req': create_req,
                 'connect_to_lobby_req': connect_req,
@@ -25,16 +26,18 @@ class Response:
                 'lobby_wait': lobby_wait,
                 'password': password,
                 'players_limit': players_limit,
-                'tiles_amount': tiles_ammount
+                'tiles_amount': tiles_ammount,
+                'game_update_req': game_update_req,
+                'move_req': move_req
             },
             'server': {
-                'server': validate_req or change_move_req or exit_req or is_ready or update,
+                'server': validate_req or change_move_req or exit_req or is_ready or server_update,
                 'server_addr': addr,
                 'client_status': client_status,
                 'client_validation': validate_req,
                 'change_move_request': change_move_req,
                 'host_exit_request': exit_req,
-                'update': update
+                'server_update': server_update
             },
             'host': {   # nescessery host information
                 'host': host,
@@ -72,6 +75,7 @@ class Response:
         if self.valid:
             if not (create_req and connect_req):
                 self.move = move
+                self.board = board
             self.times = times
             self.turn = turn
             self.create_req = create_req
@@ -79,6 +83,5 @@ class Response:
             self.is_ready = is_ready or client_is_ready
             self.end_game_req = end_game_req
             self.active_turn = active_turn
-            self.board_update = [[[], ]]    # [[place], new sign]
         else:
             return

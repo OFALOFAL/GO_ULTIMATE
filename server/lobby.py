@@ -42,6 +42,6 @@ class Lobby:
         self.client_count -= 1
         try:
             self.clients[client] = 0
-            server_q_put('Removed client_del:', client)
+            server_q_put('Removed client:', client)
         except IndexError:
             server_q_put('Client at:', client, 'is already deleted!')

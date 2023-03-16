@@ -314,7 +314,7 @@ class Window:
             else:
                 return 3
 
-    def run(self, run, server_status, game_type, move):
+    def run(self, run, server_status, game_type, move, board):
         self.draw(server_status, self.run_status)
 
         for ev in pygame.event.get():
@@ -420,6 +420,9 @@ class Window:
             self.last_move = []
         if move == 'CHANGE_MOVE':
             pass
+
+        if board[0]:
+            self.game.tiles = board[1]
 
         if server_status == 'CONNECTED':
             self.run_status['connected'] = True

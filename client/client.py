@@ -7,11 +7,12 @@ from _thread import start_new_thread
 
 password = 'MKAMksj#4525kjmois563&*sf'
 
-def update_move(response: Response):
-    pass
+def update_board(n: Network, game_type, addr):
+    response = Response(game_type, addr=addr, client_is_ready=True, game_update_req=True)
+    return n.send(pickle.dumps(response))
 
 def send_move(n: Network, game_type, move, time, turn, addr):
-    response = Response(game_type, move=move, times=time, turn=turn, addr=addr, client_is_ready=True)
+    response = Response(game_type, move=move, times=time, turn=turn, addr=addr, client_is_ready=True, move_req=True)
     return n.send(pickle.dumps(response))
 
 def create(n: Network, game_type, addr, players_limit = 2, tiles_ammount = 18):
@@ -67,13 +68,16 @@ if __name__ == '__main__':
         global turn
         global window_info
         global connected
-        print(game_type)
         if not connect(network, game_type, IP_ADDR):
             print('Server Closed')
             server_status = 'CLOSED'
         else:
             server_status = 'CONNECTED'
-            response = pickle.loads(network.get())
+            try:
+                response = pickle.loads(network.get())
+            except EOFError:
+                dissconnect(network)
+                server_status = 'CLOSED'
             print('Connected to:', response.type['server']['server_addr'], response.turn)
             turn = response.turn
             if response.type['host']['host']:
@@ -95,37 +99,58 @@ if __name__ == '__main__':
                 except:
                     return
     move = [False, []]
+    board = [False, []]
     while run:
-        window_info, value = window.run(run, server_status, game_type, move)
+        window_info, value = window.run(run, server_status, game_type, move, board)
+        if window_info == 'move':
+            print('sending move:', value, connected)
         if connected:
-            print(connected)
-            response = send_move(network, game_type, value, 0, turn, IP_ADDR)
-            if response is None:
-                run = False
-                move = [True, value]
-                server_status = 'CLOSED'
-            else:
-                try:
-                    response = pickle.loads(response)
-                    print(move)
-                except TypeError:
-                    break
-                except KeyboardInterrupt:
-                    break
-                except EOFError:
-                    break
-                if not response.change_move_req:
-                    move = [response.move, response.times]
+            if window_info == 'move':
+                response = send_move(network, game_type, value, 0, turn, IP_ADDR)
+                print('sending move')
+                if response is None:
+                    run = False
+                    move = [True, value]
+                    server_status = 'CLOSED'
                 else:
-                    move = [not response.change_move_req]
-            if response.end_game_req:
-                server_status = 'END_GAME_REQ'
-            elif response.type['server']['server']:
-                if response.type['server']['host_exit_request']:
-                    network = dissconnect(network)
-                    server_status = 'GAME_END'  # TODO: send summary of the game
-                elif response.type['server']['change_move_request']:
-                    move = 'CHANGE_MOVE'
+                    try:
+                        response = pickle.loads(response)
+                    except TypeError:
+                        connected = False
+                    except KeyboardInterrupt:
+                        connected = False
+                    except EOFError:
+                        connected = False
+                    if response.end_game_req:
+                        server_status = 'END_GAME_REQ'
+                    elif response.type['server']['server']:
+                        if response.type['server']['host_exit_request']:
+                            network = dissconnect(network)
+                            server_status = 'GAME_END'  # TODO: send summary of the game
+                        elif response.type['server']['change_move_request']:
+                            move = 'CHANGE_MOVE'
+                        else:
+                            board = [True, response.board]
+            else:
+                response = update_board(network, game_type, IP_ADDR)
+                if response is None:
+                    run = False
+                    move = [True, value]
+                    server_status = 'CLOSED'
+                else:
+                    try:
+                        response = pickle.loads(response)
+                    except TypeError:
+                        connected = False
+                    except KeyboardInterrupt:
+                        connected = False
+                    except EOFError:
+                        connected = False
+                    if response.end_game_req:
+                        server_status = 'END_GAME_REQ'
+                    elif response.type['server']['server']:
+                        board = [True, response.board]
+
         match window_info:
             case 'run':
                 run = value
@@ -134,14 +159,15 @@ if __name__ == '__main__':
                 start_new_thread(connect_thread, (players_limit, time))
             case 'disconnect':
                 network = dissconnect(network)
+                board[0] = False
                 server_status = 'DISCONNECTED'
+            case 'end_game_req':
+                send_end_game_req(network)
             case 'move':
                 if game_type == 'SANDBOX':
                     move = ['MOVE', value]
             case 'del':
                 if game_type == 'SANDBOX':
                     move = ['DEL', value]
-            case 'end_game_req':
-                send_end_game_req(network)
             case 'exit':
                 break
