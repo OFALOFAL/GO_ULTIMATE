@@ -102,8 +102,7 @@ if __name__ == '__main__':
     board = [False, []]
     while run:
         window_info, value = window.run(run, server_status, game_type, move, board)
-        if window_info == 'move':
-            print('sending move:', value, connected)
+
         if connected:
             if window_info == 'move':
                 response = send_move(network, game_type, value, 0, turn, IP_ADDR)

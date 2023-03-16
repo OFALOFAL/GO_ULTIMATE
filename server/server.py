@@ -117,6 +117,7 @@ def threaded_client(conn, addr):
                         if client['conn'] == conn:
                             client['end_game'] = True
                 elif lobby.ready and data.type['client']['move_req']:
+                    server_q_put('move_req')
                     if data.turn == lobby.active_turn:
                         if lobby.game.add_move([data.turn, data.move]):
                             server_q_put('client:', data.type['client']['client_addr'],': | turn:', data.turn, '| move:',data.move)
