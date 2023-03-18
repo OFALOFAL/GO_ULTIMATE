@@ -48,13 +48,13 @@ class Game:
 
     def add_move(self, move):
         valid = False
-        if self.game_type == 'SANDBOX':
-            try:
-                if self.tiles[move[1][0]][move[1][1]] == -1:
-                    valid = self.update_board(self.tiles.copy(), move)
-                    self.count_tile_points()
-            except IndexError:
-                pass
+        try:
+            if self.tiles[move[1][0]][move[1][1]] == -1:
+                valid = self.update_board(self.tiles.copy(), move)
+                print(valid)
+                self.count_tile_points()
+        except IndexError:
+            pass
         if valid:
             self.moves += 1
         return valid

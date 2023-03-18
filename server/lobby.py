@@ -19,6 +19,7 @@ class Lobby:
         self.client_count = client_count
         self.game_type = game_type
         self.game = Game(game_type, players_limit, tiles_ammount)
+        self.times = [self.game.time for _ in self.clients]
         self.ready = False
         self.clients_times = self.game.time
         self.clients_limit = self.game.players_limit
@@ -38,7 +39,6 @@ class Lobby:
         )
 
     def remove_client(self, client):
-        client -= 1
         self.client_count -= 1
         try:
             self.clients[client] = 0

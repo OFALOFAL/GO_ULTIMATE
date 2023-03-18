@@ -55,7 +55,7 @@ def threaded_client(conn, addr):
             return
     except KeyError:
         server_q_put('Client failed to validate message type')
-    turn = 1
+    turn = 0
     lobby = Lobby   # lobby string which will be replaced by connection or new lobby
     host = False
     strikes = 0  # counts how many times user sended invalid response for longer bans
@@ -64,7 +64,10 @@ def threaded_client(conn, addr):
         for l in lobbies:
             if l.game_type == user_info.game_type and l.client_count < l.clients_limit and not l.closed:
                 is_available = True
-                turn = len(l.clients) + 1
+                turn = 0
+                for c in l.clients:
+                    if c != 0:
+                        turn += 1
                 l.add_client(conn, 'USER', turn)
                 lobby = l
                 conn.send(pickle.dumps(Response(user_info.game_type, addr=addr, turn=turn, server_update=True)))   # send clients turn
@@ -106,7 +109,7 @@ def threaded_client(conn, addr):
                     conn.send(pickle.dumps(Response(is_ready=lobby.ready)))    # send update to user
                 elif data.type['client']['start_game_req']:     # update server
                     lobby.ready = True    # start lobby
-                    lobby.clients_limit = len(lobby.clients)    # cut new joining players
+                    lobby.clients_limit = len(lobby.clients) - 1    # cut new joining players
                     print('Lobby', lobby.id, 'is ready')
 
                 if data.end_game_req:
@@ -117,18 +120,15 @@ def threaded_client(conn, addr):
                         if client['conn'] == conn:
                             client['end_game'] = True
                 elif lobby.ready and data.type['client']['move_req']:
-                    server_q_put('move_req')
                     if data.turn == lobby.active_turn:
                         if lobby.game.add_move([data.turn, data.move]):
                             server_q_put('client:', data.type['client']['client_addr'],': | turn:', data.turn, '| move:',data.move)
                             turn = data.turn
-                            if turn < lobby.game.clients_limit:
+                            if turn < lobby.clients_limit:
                                 next_turn = turn+1
                             else:
-                                next_turn = 1
+                                next_turn = 0
                             for client in lobby.clients:
-                                if client == 0:
-                                    continue
                                 try:
                                     lobby.active_turn = next_turn
                                     response = Response(board=lobby.game.tiles, active_turn=lobby.active_turn, server_update=True, times=data.times)
@@ -148,7 +148,8 @@ def threaded_client(conn, addr):
                                     strikes += 1
                             turn = next_turn
                         else:
-                            for t in data.times:
+                            server_q_put('client:', data.type['client']['client_addr'],': | turn:', data.turn, '| invalid_move:',data.move)
+                            for t in lobby.times:
                                 if t <= 0:
                                     time_elapsed = True    # TODO: send time end and summary of the game
                     else:

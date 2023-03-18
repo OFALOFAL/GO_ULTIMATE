@@ -414,6 +414,7 @@ class Window:
         if move[0] == 'MOVE':
             if self.last_move != move[1]:
                 self.last_move = move[1]
+                print(self.currently_placing)
                 valid = self.game.add_move([self.currently_placing, move[1]])
         if move[0] == 'DEL':
             self.game.remove_move(move[1])
