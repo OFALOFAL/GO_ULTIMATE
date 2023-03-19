@@ -62,7 +62,7 @@ def threaded_client(conn, addr):
     if user_info.connect_req:
         is_available = False
         for l in lobbies:
-            if l.game_type == user_info.game_type and l.client_count < l.clients_limit and not l.closed:
+            if l.game_type == user_info.game_type and l.game.tiles_ammount == user_info.type['client']['tiles_amount'] and l.client_count < l.clients_limit and not l.closed:
                 is_available = True
                 turn = 0
                 for c in l.clients:
@@ -110,7 +110,9 @@ def threaded_client(conn, addr):
                 elif data.type['client']['start_game_req']:     # update server
                     lobby.ready = True    # start lobby
                     lobby.clients_limit = len(lobby.clients) - 1    # cut new joining players
-                    print('Lobby', lobby.id, 'is ready')
+                    conn.send(pickle.dumps(Response(server_update=True)))   # TODO: send full list of clients to the host and other useful for it info
+                    print('Lobby', lobby.id, 'is ready; started by:', data.type['client']['client_addr'])
+
 
                 if data.end_game_req:
                     for client in lobby.clients:
@@ -128,9 +130,9 @@ def threaded_client(conn, addr):
                                 next_turn = turn+1
                             else:
                                 next_turn = 0
+                            lobby.active_turn = next_turn
                             for client in lobby.clients:
                                 try:
-                                    lobby.active_turn = next_turn
                                     response = Response(board=lobby.game.tiles, active_turn=lobby.active_turn, server_update=True, times=data.times)
                                     client['conn'].send(pickle.dumps(response))
                                 except ConnectionResetError as e:
@@ -146,6 +148,8 @@ def threaded_client(conn, addr):
                                     lobby.active_turn = turn
                                     server_q_put('User:', client['id'], 'went offline', e)
                                     strikes += 1
+                                except TypeError:
+                                    pass    # TODO: fix handling exiting clients
                             turn = next_turn
                         else:
                             server_q_put('client:', data.type['client']['client_addr'],': | turn:', data.turn, '| invalid_move:',data.move)
@@ -155,8 +159,8 @@ def threaded_client(conn, addr):
                     else:
                         server_q_put('turn:', lobby.active_turn, 'got:', data.turn)
                 elif lobby.ready and data.type['client']['game_update_req']:
-                    response = Response(board=lobby.game.tiles, active_turn=lobby.active_turn, server_update=True, times=data.times)
-                    client['conn'].send(pickle.dumps(response))
+                        response = Response(board=lobby.game.tiles, active_turn=lobby.active_turn, server_update=True, times=data.times)
+                        conn.send(pickle.dumps(response))
 
                 temp = []
                 for client in lobby.clients:

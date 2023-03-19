@@ -9,7 +9,7 @@ class Lobby:
                 'conn': client_conn,
                 'role': 'HOST',
                 'id': 0,
-                'turn': 1,
+                'turn': 0,
                 'end_game': False
                 #name: name TODO: add name
                 #points: 0 TODO: add points from game (maybe in self.game is better)

@@ -13,14 +13,16 @@ def update_board(n: Network, game_type, addr):
 
 def send_move(n: Network, game_type, move, time, turn, addr):
     response = Response(game_type, move=move, times=time, turn=turn, addr=addr, client_is_ready=True, move_req=True)
-    return n.send(pickle.dumps(response))
+    msg = n.send(pickle.dumps(response))
+    return msg
+    # return n.send(pickle.dumps(response))
 
 def create(n: Network, game_type, addr, players_limit = 2, tiles_ammount = 18):
     n.client.connect(n.addr)
-    response = Response(game_type, create_req=True, addr=addr, players_limit=players_limit, tiles_ammount=tiles_ammount)
+    response = Response(game_type, create_req=True, addr=addr, players_limit=players_limit, tiles_amount=tiles_ammount)
     return n.send(pickle.dumps(response))
 
-def connect(n: Network, game_type, addr, players_limit = 2, tiles_ammount = 18):
+def connect(n: Network, game_type, addr, players_limit = 2, tiles_amount = 18):
     try:
         n.client.connect(n.addr)
     except TimeoutError:
@@ -29,15 +31,15 @@ def connect(n: Network, game_type, addr, players_limit = 2, tiles_ammount = 18):
         return False
     except OSError:
         return False
-    response = Response(game_type, connect_req=True, addr=addr, password=password, players_limit=players_limit, tiles_ammount=tiles_ammount)
+    response = Response(game_type, connect_req=True, addr=addr, password=password, players_limit=players_limit, tiles_amount=tiles_amount)
     return n.send(pickle.dumps(response))
 
 def dissconnect(n: Network):
     n.client.close()
     return Network()
 
-def start(n: Network):
-    n.send(pickle.dumps(Response(start_game_req=True, turn=1, addr='START')))
+def start(n: Network, addr):
+    return pickle.loads(n.send(pickle.dumps(Response(start_game_req=True, addr=addr))))
 
 def wait_for_lobby(n: Network):
     return pickle.loads(n.send(pickle.dumps(Response(lobby_wait=True))))
@@ -62,8 +64,11 @@ if __name__ == '__main__':
     turn = -1
     window_info = None
     connected = False
+    move = [False, []]
+    board = [False, []]
 
     def connect_thread(players_limit, time):
+        # Using globals becouse thread can't return values
         global server_status
         global turn
         global window_info
@@ -86,30 +91,33 @@ if __name__ == '__main__':
                         pass
                     else:
                         connected = True
-                        print(connected)
+                        print('started lobby')
+                        start_info = start(network, IP_ADDR)
                 except:
-                    return
-                start(network)
+                    server_status = 'CLOSED'
             else:
                 try:
                     while not wait_for_lobby(network).is_ready:
                         pass
                     else:
                         connected = True
-                        print(connected)
+                        print('connected to lobby')
                 except:
-                    return
+                    server_status = 'CLOSED'
 
-    def _send_move(_network, _connected, _move, _server_status, _board):
-        response = send_move(_network, game_type, value, 0, turn, IP_ADDR)
-        print('pass')
+    def _send_move(n: Network):
+        # Using globals becouse thread can't return values
+        global connected
+        global server_status
+        global board
+        global move
+
+        response = send_move(n, game_type, value, 0, turn, IP_ADDR)
         if response is None:
-            _move = [True, value]
-            _server_status = 'CLOSED'
+            server_status = 'CLOSED'
         else:
             try:
                 response = pickle.loads(response)
-                print(response.board)
             except TypeError:
                 _connected = False
             except KeyboardInterrupt:
@@ -121,19 +129,22 @@ if __name__ == '__main__':
             elif response.type['server']['server']:
                 if response.type['server']['host_exit_request']:
                     _connected = False
-                    _network = dissconnect(_network)
+                    n = dissconnect(n)
                     _server_status = 'GAME_END'  # TODO: send summary of the game
                 elif response.type['server']['change_move_request']:
                     _move = 'CHANGE_MOVE'
                 else:
-                    _board = [True, response.board]
-                    print(_board)
+                    board = [True, response.board]
 
-    def _update_board(_network, _connected, _move, _server_status, _board):
-        response = update_board(_network, game_type, IP_ADDR)
+    def _update_board(n: Network):
+        # Using globals becouse thread can't return values
+        global connected
+        global server_status
+        global board
+
+        response = update_board(n, game_type, IP_ADDR)
         if response is None:
-            _move = [True, value]
-            _server_status = 'CLOSED'
+            server_status = 'CLOSED'
         else:
             try:
                 response = pickle.loads(response)
@@ -146,19 +157,18 @@ if __name__ == '__main__':
             if response.end_game_req:
                 _server_status = 'END_GAME_REQ'
             elif response.type['server']['server']:
-                _board = [True, response.board]
+                board = [True, response.board]
 
 
-    move = [False, []]
-    board = [False, []]
     while run:
         window_info, value = window.run(run, server_status, game_type, move, board)
         if connected:
             if window_info == 'move':
-                start_new_thread(_send_move, (network, connected, move, server_status, board))
-                print(board)
+                start_new_thread(_send_move, (network, ))
             else:
-                start_new_thread(_update_board, (network, connected, move, server_status, board))
+                start_new_thread(_update_board, (network, ))
+        else:
+            board = [False, []]
 
         match window_info:
             case 'run':
