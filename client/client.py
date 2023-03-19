@@ -19,10 +19,11 @@ def send_move(n: Network, game_type, move, time, turn, addr):
 
 def create(n: Network, game_type, addr, players_limit = 2, tiles_ammount = 18):
     n.client.connect(n.addr)
-    response = Response(game_type, create_req=True, addr=addr, players_limit=players_limit, tiles_amount=tiles_ammount)
+    response = Response(game_type, create_req=True, addr=addr, password=password, players_limit=players_limit, tiles_amount=tiles_ammount)
     return n.send(pickle.dumps(response))
 
 def connect(n: Network, game_type, addr, players_limit = 2, tiles_amount = 18):
+    print(game_type, addr, players_limit, tiles_amount)
     try:
         n.client.connect(n.addr)
     except TimeoutError:
@@ -67,13 +68,13 @@ if __name__ == '__main__':
     move = [False, []]
     board = [False, []]
 
-    def connect_thread(players_limit, time):
+    def connect_thread(players_limit, tiles_amount, time):
         # Using globals becouse thread can't return values
         global server_status
         global turn
         global window_info
         global connected
-        if not connect(network, game_type, IP_ADDR):
+        if not connect(network, game_type, IP_ADDR, players_limit, tiles_amount):
             print('Server Closed')
             server_status = 'CLOSED'
         else:
@@ -104,6 +105,37 @@ if __name__ == '__main__':
                         print('connected to lobby')
                 except:
                     server_status = 'CLOSED'
+
+    def create_thread(players_limit, tiles_amount, time):
+        # Using globals becouse thread can't return values
+        global server_status
+        global turn
+        global window_info
+        global connected
+        if not create(network, game_type, IP_ADDR, players_limit, tiles_amount):
+            print('Server Closed')
+            server_status = 'CLOSED'
+        else:
+            server_status = 'CONNECTED'
+            try:
+                response = pickle.loads(network.get())
+            except EOFError:
+                dissconnect(network)
+                server_status = 'CLOSED'
+            print('Connected to:', response.type['server']['server_addr'], response.turn)
+            turn = response.turn
+            if response.type['host']['host']:
+                try:
+                    while not  len(wait_for_clients(network).type['host']['clients']) == players_limit:
+                        pass
+                    else:
+                        connected = True
+                        print('started lobby')
+                        start_info = start(network, IP_ADDR)
+                except:
+                    server_status = 'CLOSED'
+            else:
+                server_status = 'CLOSED'
 
     def _send_move(n: Network):
         # Using globals becouse thread can't return values
@@ -174,8 +206,11 @@ if __name__ == '__main__':
             case 'run':
                 run = value
             case 'connect':
-                game_type, players_limit, time = value
-                start_new_thread(connect_thread, (players_limit, time))
+                game_type, players_limit, tiles_amount, time = value
+                start_new_thread(connect_thread, (players_limit, tiles_amount, time))
+            case 'create':
+                game_type, players_limit, tiles_amount, time = value
+                start_new_thread(create_thread, (players_limit, tiles_amount, time))
             case 'disconnect':
                 network = dissconnect(network)
                 board[0] = False

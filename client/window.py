@@ -353,6 +353,7 @@ class Window:
                             self.choosen_limit = x + 2
                             self.choosen_limit_bar.x = self.right_site_center - 127 + 30 * x
                             self.game = Game('GO NATIONS', players_limit=self.choosen_limit)
+                            self.choosen_board_size = self.game.tiles_ammount
                 if self.game.game_type in ['GO', 'GO | 5', 'GO | 10', 'GO | 30', 'SANDBOX']:
                     sizes = [8, 18]
                     for x, tab in enumerate(self.board_size_tabs):
@@ -369,11 +370,11 @@ class Window:
                     elif self.run_status['connected']:
                         return 'disconnect', [self.game.game_type, False, False]
                     else:
-                        return 'connect', [self.game.game_type, self.game.players_limit, self.game.time]
+                        return 'connect', [self.game.game_type, self.game.players_limit, self.choosen_board_size, self.game.time]
                 if self.create_btn.contains(mouse):
                     self.clicked = True
                     self.run_status['create_clicked'] = True
-                    return 'create', [self.game.game_type, self.game.players_limit, self.game.time]
+                    return 'create', [self.game.game_type, self.game.players_limit, self.choosen_board_size, self.game.time]
                 if self.exit_btn.contains(mouse):
                     self.clicked = True
                     self.run_status['exit_clicked_clicked'] = True
