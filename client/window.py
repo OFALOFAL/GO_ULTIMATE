@@ -40,7 +40,6 @@ class Window:
         self.right_site_center = (self.WIDTH + self.WIDTH - self.WIDTH / 4 - 5) / 2 - self.board_margin_right / 2
         self.con_btn_pos = (self.right_site_center - 100, self.HEIGHT - self.HEIGHT / 5)
         self.con_btn = pygame.Rect(self.con_btn_pos, (200, 75))
-        self.create_btn = pygame.Rect((self.con_btn_pos[0]+100, self.con_btn_pos[1]), (100, 75))
 
         self.EXIT_TEXT = self.SMALL_FONT.render('EXIT', True, self.BLACK)
         self.exit_margin_right = 0
@@ -131,7 +130,7 @@ class Window:
                 valid = True
             self.colors.append(color)
         self.currently_placing = 0
-        self.run_status = {'con_clicked': False, 'create_clicked': False, 'exit_clicked': False, 'go_clicked': False, 'show_bar': False, 'connected': False}
+        self.run_status = {'con_clicked': False, 'exit_clicked': False, 'go_clicked': False, 'show_bar': False, 'connected': False}
         self.last_move = []
         self.clicked = False
         self.clock = ((pygame.Rect((self.right_site_center - 200 - 5 - 150, self.HEIGHT - self.board_margin_top - 40), (150, 40)), self.BLACK),
@@ -139,7 +138,7 @@ class Window:
         self.enemy_clock = ((pygame.Rect((self.right_site_center - 200 - 5 - 150, self.board_margin_top), (150, 40)), self.BLACK),
                       (pygame.Rect((self.right_site_center - 200 - 5 - 145, self.board_margin_top + 4), (140, 32)), self.LIGHT_GREY))
 
-    def draw(self, server_status, run_status):
+    def draw(self, server_status, run_status, times):
         self.WIN.blit(self.BG_IMG, (0, 0))
         self.WIN.blit(self.right_border_s, self.right_border)
 
@@ -186,13 +185,24 @@ class Window:
                 pygame.draw.rect(self.WIN, piece[1], piece[0])
             for piece in self.enemy_clock:
                 pygame.draw.rect(self.WIN, piece[1], piece[0])
-            if not self.run_status['connected']:
+            if not self.run_status['connected'] or not times[0]:
                 time = self.FONT_2.render(str(self.game.time) + ' : 00', True, self.BLACK)
                 self.WIN.blit(time, ((self.enemy_clock[0][0].x * 2 + self.enemy_clock[0][0].width) / 2 - time.get_width() / 2,
                                      (self.enemy_clock[0][0].y * 2 + self.enemy_clock[0][0].height) / 2 - time.get_height() / 2))
                 self.WIN.blit(time,((self.clock[0][0].x * 2 + self.clock[0][0].width) / 2 - time.get_width()/2,
                                     (self.clock[0][0].y * 2 + self.clock[0][0].height) / 2 - time.get_height()/2))
-            # TODO: draw accual time
+            else:
+                minutes = times[1][0] // 60
+                seconds = times[1][0] - minutes * 60
+                time_1 = self.FONT_2.render(str(minutes) + ' : ' + str(seconds), True, self.BLACK)
+                minutes = times[1][1] // 60
+                seconds = times[1][1] - minutes * 60
+                time_2 = self.FONT_2.render(str(minutes) + ' : ' + str(seconds), True, self.BLACK)
+                self.WIN.blit(time_1, ((self.enemy_clock[0][0].x * 2 + self.enemy_clock[0][0].width) / 2 - time_1.get_width() / 2,
+                                     (self.enemy_clock[0][0].y * 2 + self.enemy_clock[0][0].height) / 2 - time_1.get_height() / 2))
+                self.WIN.blit(time_2, ((self.clock[0][0].x * 2 + self.clock[0][0].width) / 2 - time_2.get_width() / 2,
+                                     (self.clock[0][0].y * 2 + self.clock[0][0].height) / 2 - time_2.get_height() / 2))
+
 
         left_side_text = self.right_site_center - 65
         right_side_text = self.right_site_center + 75
@@ -232,47 +242,23 @@ class Window:
                 text = self.MINI_FONT.render(sizes[x], True, self.WHITE)
                 self.WIN.blit(text, ((tab.x * 2 + tab.width)/2 - text.get_width()/2, (tab.y * 2 + tab.height)/2 - text.get_height()/2 - 2))
 
-        if not self.game.game_type == 'GO NATIONS':
-            self.con_btn.width = 200
-            self.create_btn.width = 0
-            if self.game.game_type == 'SANDBOX':
-                if self.run_status['con_clicked']:
-                    pygame.draw.rect(self.WIN, self.GREY, self.con_btn)
-                else:
-                    pygame.draw.rect(self.WIN, self.GOLD, self.con_btn)
-            else:
-                if server_status == 'CLOSED':
-                    pygame.draw.rect(self.WIN, self.RED, self.con_btn)
-                elif self.run_status['connected']:
-                    pygame.draw.rect(self.WIN, self.GREEN, self.con_btn)
-                elif self.run_status['con_clicked']:
-                    pygame.draw.rect(self.WIN, self.GREY, self.con_btn)
-                else:
-                    pygame.draw.rect(self.WIN, self.GOLD, self.con_btn)
-        else:
-            self.con_btn.width = 100
-            self.create_btn.width = 100
-            if server_status == 'CLOSED':
-                pygame.draw.rect(self.WIN, self.RED, self.con_btn)
-                pygame.draw.rect(self.WIN, self.RED, self.create_btn)
-            elif self.run_status['con_clicked']:
+        if self.game.game_type == 'SANDBOX':
+            if self.run_status['con_clicked']:
                 pygame.draw.rect(self.WIN, self.GREY, self.con_btn)
-                pygame.draw.rect(self.WIN, self.RED, self.create_btn)
-            elif self.run_status['create_clicked']:
-                pygame.draw.rect(self.WIN, self.RED, self.con_btn)
-                pygame.draw.rect(self.WIN, self.GREY, self.create_btn)
             else:
                 pygame.draw.rect(self.WIN, self.GOLD, self.con_btn)
-                pygame.draw.rect(self.WIN, self.GOLD, self.create_btn)
-            pygame.draw.rect(self.WIN, self.BLACK, pygame.Rect((self.right_site_center - 1, self.con_btn.y), (2, self.con_btn.height)))
+        else:
+            if server_status == 'CLOSED':
+                pygame.draw.rect(self.WIN, self.RED, self.con_btn)
+            elif self.run_status['connected']:
+                pygame.draw.rect(self.WIN, self.GREEN, self.con_btn)
+            elif self.run_status['con_clicked']:
+                pygame.draw.rect(self.WIN, self.GREY, self.con_btn)
+            else:
+                pygame.draw.rect(self.WIN, self.GOLD, self.con_btn)
 
         if self.game.game_type == 'SANDBOX':
             self.WIN.blit(self.RESET_TEXT, (self.right_site_center - self.RESET_TEXT.get_width() / 2, self.HEIGHT - self.HEIGHT / 5 + self.RESET_TEXT.get_height() / 2))
-        elif self.game.game_type == 'GO NATIONS':
-            con = self.SMALL_FONT.render('Connect', True, self.BLACK)
-            self.WIN.blit(con, ((self.con_btn.x + self.con_btn.x + self.con_btn.width)/2 - con.get_width() / 2, self.HEIGHT - self.HEIGHT / 5 + con.get_height()))
-            create = self.SMALL_FONT.render('Create', True, self.BLACK)
-            self.WIN.blit(create, ((self.create_btn.x + self.create_btn.x + self.create_btn.width)/2 - create.get_width() / 2, self.HEIGHT - self.HEIGHT / 5 + create.get_height()))
         else:
             self.WIN.blit(self.CON_TEXT, (self.right_site_center - self.CON_TEXT.get_width() / 2, self.HEIGHT - self.HEIGHT / 5 + self.CON_TEXT.get_height() / 2))
         if self.run_status['exit_clicked']:
@@ -314,8 +300,8 @@ class Window:
             else:
                 return 3
 
-    def run(self, run, server_status, game_type, move, board):
-        self.draw(server_status, self.run_status)
+    def run(self, run, server_status, game_type, move, board, times, game_summary):
+        self.draw(server_status, self.run_status, times)
 
         for ev in pygame.event.get():
             if ev.type == pygame.MOUSEWHEEL:
@@ -370,11 +356,7 @@ class Window:
                     elif self.run_status['connected']:
                         return 'disconnect', [self.game.game_type, False, False]
                     else:
-                        return 'connect', [self.game.game_type, self.game.players_limit, self.choosen_board_size, self.game.time]
-                if self.create_btn.contains(mouse):
-                    self.clicked = True
-                    self.run_status['create_clicked'] = True
-                    return 'create', [self.game.game_type, self.game.players_limit, self.choosen_board_size, self.game.time]
+                        return 'connect', [self.game.game_type, self.game.players_limit, self.choosen_board_size]
                 if self.exit_btn.contains(mouse):
                     self.clicked = True
                     self.run_status['exit_clicked_clicked'] = True
@@ -415,7 +397,6 @@ class Window:
         if move[0] == 'MOVE':
             if self.last_move != move[1]:
                 self.last_move = move[1]
-                print(self.currently_placing)
                 valid = self.game.add_move([self.currently_placing, move[1]])
         if move[0] == 'DEL':
             self.game.remove_move(move[1])
@@ -431,8 +412,9 @@ class Window:
         elif server_status == 'DISCONNECTED':
             self.run_status['connected'] = False
 
-        if server_status == 'GAME_END':
+        if game_summary[0]:
             self.run_status['connected'] = False
+            # TODO: write on screen the scores
 
         if server_status == 'END_GAME_REQ':
             pass    # TODO: change to ask player if he wants to end the game

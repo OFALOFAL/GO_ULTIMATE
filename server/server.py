@@ -70,7 +70,7 @@ def threaded_client(conn, addr):
                         turn += 1
                 l.add_client(conn, 'USER', turn)
                 lobby = l
-                conn.send(pickle.dumps(Response(user_info.game_type, addr=addr, turn=turn, server_update=True)))   # send clients turn
+                conn.send(pickle.dumps(Response(game_type=user_info.game_type, turn=turn, server_update=True)))   # send clients turn
                 server_q_put('Connected to lobby:', lobby.id)
                 break
         if not is_available:
@@ -97,7 +97,8 @@ def threaded_client(conn, addr):
                 break
             elif data.type['host']['host']:
                 if data.type['host']['wait_for_clients']:
-                    conn.send(pickle.dumps(Response(user_info.game_type, addr=addr, host=True, clients=[[x['id'], x['role']] for x in lobby.clients])))     # send update to host
+                    response = Response(game_type=user_info.game_type, host=True, clients_info=lobby.send_clients_info(), server_update=True)
+                    conn.send(pickle.dumps(response))     # send update to host
                 elif len(data.type['host']['ban_clients']) > 0:
                     for ban in data.type['host']['ban_clients']:
                         try:
@@ -106,12 +107,13 @@ def threaded_client(conn, addr):
                             pass
             elif data.type['client']['client']:
                 if data.type['client']['lobby_wait']:
-                    conn.send(pickle.dumps(Response(is_ready=lobby.ready)))    # send update to user
+                    conn.send(pickle.dumps(Response(is_ready=lobby.ready, server_update=True)))    # send update to user
                 elif data.type['client']['start_game_req']:     # update server
                     lobby.ready = True    # start lobby
                     lobby.clients_limit = len(lobby.clients) - 1    # cut new joining players
-                    conn.send(pickle.dumps(Response(server_update=True)))   # TODO: send full list of clients to the host and other useful for it info
-                    print('Lobby', lobby.id, 'is ready; started by:', data.type['client']['client_addr'])
+                    lobby.last_move_time = time.time()
+                    conn.send(pickle.dumps(Response(server_update=True, clients_info=lobby.send_clients_info())))
+                    server_q_put('Lobby', lobby.id, 'is ready; started by:', data.type['client']['client_addr'])
 
 
                 if data.end_game_req:
@@ -124,6 +126,8 @@ def threaded_client(conn, addr):
                 elif lobby.ready and data.type['client']['move_req']:
                     if data.turn == lobby.active_turn:
                         if lobby.game.add_move([data.turn, data.move]):
+                            saved_time = lobby.last_move_time
+                            saved_time_left = lobby.times[lobby.active_turn]
                             server_q_put('client:', data.type['client']['client_addr'],': | turn:', data.turn, '| move:',data.move)
                             turn = data.turn
                             if turn < lobby.clients_limit:
@@ -132,8 +136,9 @@ def threaded_client(conn, addr):
                                 next_turn = 0
                             lobby.active_turn = next_turn
                             for client in lobby.clients:
+                                client['points'] = lobby.game.hand_points[client['turn']] + lobby.game.tile_points[client['turn']]
                                 try:
-                                    response = Response(board=lobby.game.tiles, active_turn=lobby.active_turn, server_update=True, times=data.times)
+                                    response = Response(board=lobby.game.tiles, active_turn=lobby.active_turn, server_update=True, times=lobby.times, clients_info=lobby.send_clients_info())
                                     client['conn'].send(pickle.dumps(response))
                                 except ConnectionResetError as e:
                                     if client['role'] == 'HOST' and client['conn'] != conn:
@@ -142,10 +147,14 @@ def threaded_client(conn, addr):
                                         break
                                     else:
                                         lobby.active_turn = turn
+                                        lobby.last_move_time = saved_time
+                                        lobby.times[lobby.active_turn] = saved_time_left
                                         server_q_put('User:', client['id'], 'went offline', e)
                                         strikes += 1
                                 except OSError as e:
                                     lobby.active_turn = turn
+                                    lobby.last_move_time = saved_time
+                                    lobby.times[lobby.active_turn] = saved_time_left
                                     server_q_put('User:', client['id'], 'went offline', e)
                                     strikes += 1
                                 except TypeError:
@@ -155,12 +164,14 @@ def threaded_client(conn, addr):
                             server_q_put('client:', data.type['client']['client_addr'],': | turn:', data.turn, '| invalid_move:',data.move)
                             for t in lobby.times:
                                 if t <= 0:
-                                    time_elapsed = True    # TODO: send time end and summary of the game
+                                    server_q_put('Closing lobby:', lobby.id)
+                                    conn.send(pickle.dumps(Response(board=lobby.game.tiles, game_summary=True, times=lobby.times, clients_info=lobby.send_clients_info())))
                     else:
                         server_q_put('turn:', lobby.active_turn, 'got:', data.turn)
                 elif lobby.ready and data.type['client']['game_update_req']:
-                        response = Response(board=lobby.game.tiles, active_turn=lobby.active_turn, server_update=True, times=data.times)
-                        conn.send(pickle.dumps(response))
+                    lobby.update_time()
+                    response = Response(board=lobby.game.tiles, active_turn=lobby.active_turn, server_update=True, times=lobby.times)
+                    conn.send(pickle.dumps(response))
 
                 temp = []
                 for client in lobby.clients:
@@ -171,7 +182,7 @@ def threaded_client(conn, addr):
                 end_game = all(temp)
                 if end_game:
                     server_q_put('Closing lobby:', lobby.id)
-                    conn.send(pickle.dumps(Response(exit_req=True)))  # TODO: change this message to summary of the game
+                    conn.send(pickle.dumps(Response(board=lobby.game.tiles, game_summary=True, times=lobby.times, clients_info=lobby.send_clients_info())))
 
             else:
                 server_q_put('Invalid response from:', addr)

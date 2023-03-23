@@ -1,19 +1,19 @@
 class Response:
     def __init__(self,
                  # all:
-                 game_type='', move=[], board=[], times=[], turn=0, addr='', is_ready=False, end_game_req=False, active_turn=False,
+                 game_type='', move=[], board=[], turn=0, addr='', is_ready=False, end_game_req=False, active_turn=False,
                  # client distinct request:
                  create_req=False, connect_req=False, start_game_req=False, lobby_wait=False, password='', client_is_ready=False, players_limit = 2,
                  tiles_amount = 18, game_update_req=False, move_req=False,
                  # server distinct request:
-                 validate_req=False, change_move_req=False, client_status=None, exit_req=False, server_update=False,
+                 validate_req=False, change_move_req=False, client_status=None, exit_req=False, server_update=False, game_summary = False, clients_info = [], times=[],
                  # host distinct request:
-                 host=False, clients=[], ban_clients=[], wait_for_clients=False,
+                 host=False, ban_clients=[], wait_for_clients=False,
                  ):
         # information distinguished by type
         request = is_ready or end_game_req \
                   or create_req or connect_req or start_game_req or lobby_wait or client_is_ready \
-                  or validate_req or change_move_req or exit_req or server_update \
+                  or validate_req or change_move_req or exit_req or server_update or game_summary \
                   or host or wait_for_clients or game_update_req or move_req
         self.type = {
             'request': request,
@@ -31,19 +31,21 @@ class Response:
                 'move_req': move_req
             },
             'server': {
-                'server': validate_req or change_move_req or exit_req or is_ready or server_update,
+                'server': validate_req or change_move_req or exit_req or is_ready or server_update or game_summary,
                 'server_addr': addr,
                 'client_status': client_status,
                 'client_validation': validate_req,
                 'change_move_request': change_move_req,
                 'host_exit_request': exit_req,
-                'server_update': server_update
+                'server_update': server_update,
+                'game_summary': game_summary,
+                'clients_info': clients_info,
+                'times': times
             },
             'host': {   # nescessery host information
                 'host': host,
                 'wait_for_clients': wait_for_clients,
-                'clients': clients,
-                'ban_clients': ban_clients
+                'ban_clients': ban_clients,
             }
         }
 
@@ -76,7 +78,6 @@ class Response:
             if not (create_req and connect_req):
                 self.move = move
                 self.board = board
-            self.times = times
             self.turn = turn
             self.create_req = create_req
             self.connect_req = connect_req
