@@ -69,6 +69,7 @@ if __name__ == '__main__':
     board = [False, []]
     game_summary = [False, []]
     times = [False, []]
+    host = False
 
     def connect_thread(players_limit, tiles_amount):
         # Using globals becouse thread can't return values
@@ -76,6 +77,8 @@ if __name__ == '__main__':
         global turn
         global window_info
         global connected
+        global host
+
         if not connect(network, game_type, IP_ADDR, players_limit, tiles_amount):
             print('Server Closed')
             server_status = 'CLOSED'
@@ -86,12 +89,13 @@ if __name__ == '__main__':
                 print('Connected to server, my turn:', response.turn)
                 turn = response.turn
                 if response.type['host']['host']:
+                    host = True
                     while not len(wait_for_clients(network).type['server']['clients_info']) == players_limit:
                         pass
                     else:
                         connected = True
-                        print('started lobby')
                         start_info = start(network, IP_ADDR)
+                        print('started lobby')
                 else:
                     while not wait_for_lobby(network).is_ready:
                         pass
@@ -114,6 +118,7 @@ if __name__ == '__main__':
         global turn
         global window_info
         global connected
+
         if not create(network, game_type, IP_ADDR, players_limit, tiles_amount):
             print('Server Closed')
             server_status = 'CLOSED'
@@ -128,7 +133,8 @@ if __name__ == '__main__':
             turn = response.turn
             if response.type['host']['host']:
                 try:
-                    while not  len(wait_for_clients(network).type['host']['clients']) == players_limit:
+                    response = wait_for_clients(network)
+                    while not len(response.type['host']['clients']) == players_limit:
                         pass
                     else:
                         connected = True
@@ -148,7 +154,7 @@ if __name__ == '__main__':
         global game_summary
         global times
 
-        response = send_move(n, game_type, value, 0, turn, IP_ADDR)
+        response = send_move(n, game_type, value, turn, IP_ADDR)
         if response is None:
             server_status = 'CLOSED'
         else:
@@ -174,6 +180,10 @@ if __name__ == '__main__':
                     game_summary = [True, response.type['server']['clients_info']]
                 else:
                     board = [True, response.board]
+                    if len(response.type['server']['times']):
+                        times = [True, response.type['server']['times']]
+                    else:
+                        times = [False]
 
     def _update_board(n: Network):
         # Using globals becouse thread can't return values
@@ -190,27 +200,27 @@ if __name__ == '__main__':
             try:
                 response = pickle.loads(response)
             except TypeError:
-                _connected = False
+                connected = False
             except KeyboardInterrupt:
-                _connected = False
+                connected = False
             except EOFError:
-                _connected = False
+                connected = False
             if response.end_game_req:
-                _server_status = 'END_GAME_REQ'
+                server_status = 'END_GAME_REQ'
             elif response.type['server']['server']:
                 if response.type['server']['game_summary']:
                     board = [False, []]
                     game_summary = [True, response.type['server']['clients_info']]
                 else:
                     board = [True, response.board]
-                    if len(wait_for_clients(network).type['server']['clients_info']) == players_limit:
+                    if len(response.type['server']['times']):
                         times = [True, response.type['server']['times']]
                     else:
-                        times = [False, []]
+                        times = [False]
 
 
     while run:
-        window_info, value = window.run(run, server_status, game_type, move, board, times, game_summary)
+        window_info, value = window.run(run, server_status, game_type, turn, move, board, times, game_summary)
         if connected:
             if window_info == 'move':
                 start_new_thread(_send_move, (network, ))

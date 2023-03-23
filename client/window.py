@@ -138,7 +138,7 @@ class Window:
         self.enemy_clock = ((pygame.Rect((self.right_site_center - 200 - 5 - 150, self.board_margin_top), (150, 40)), self.BLACK),
                       (pygame.Rect((self.right_site_center - 200 - 5 - 145, self.board_margin_top + 4), (140, 32)), self.LIGHT_GREY))
 
-    def draw(self, server_status, run_status, times):
+    def draw(self, server_status, run_status, times, turn):
         self.WIN.blit(self.BG_IMG, (0, 0))
         self.WIN.blit(self.right_border_s, self.right_border)
 
@@ -187,21 +187,31 @@ class Window:
                 pygame.draw.rect(self.WIN, piece[1], piece[0])
             if not self.run_status['connected'] or not times[0]:
                 time = self.FONT_2.render(str(self.game.time) + ' : 00', True, self.BLACK)
+                self.WIN.blit(time, ((self.clock[0][0].x * 2 + self.clock[0][0].width) / 2 - time.get_width() / 2,
+                                       (self.clock[0][0].y * 2 + self.clock[0][0].height) / 2 - time.get_height() / 2))
                 self.WIN.blit(time, ((self.enemy_clock[0][0].x * 2 + self.enemy_clock[0][0].width) / 2 - time.get_width() / 2,
-                                     (self.enemy_clock[0][0].y * 2 + self.enemy_clock[0][0].height) / 2 - time.get_height() / 2))
-                self.WIN.blit(time,((self.clock[0][0].x * 2 + self.clock[0][0].width) / 2 - time.get_width()/2,
-                                    (self.clock[0][0].y * 2 + self.clock[0][0].height) / 2 - time.get_height()/2))
+                                       (self.enemy_clock[0][0].y * 2 + self.enemy_clock[0][0].height) / 2 - time.get_height() / 2))
             else:
-                minutes = times[1][0] // 60
-                seconds = times[1][0] - minutes * 60
-                time_1 = self.FONT_2.render(str(minutes) + ' : ' + str(seconds), True, self.BLACK)
-                minutes = times[1][1] // 60
-                seconds = times[1][1] - minutes * 60
-                time_2 = self.FONT_2.render(str(minutes) + ' : ' + str(seconds), True, self.BLACK)
-                self.WIN.blit(time_1, ((self.enemy_clock[0][0].x * 2 + self.enemy_clock[0][0].width) / 2 - time_1.get_width() / 2,
-                                     (self.enemy_clock[0][0].y * 2 + self.enemy_clock[0][0].height) / 2 - time_1.get_height() / 2))
-                self.WIN.blit(time_2, ((self.clock[0][0].x * 2 + self.clock[0][0].width) / 2 - time_2.get_width() / 2,
+                minutes = times[1][turn] // 60
+                seconds = times[1][turn] - minutes * 60
+                if seconds:
+                    time_1 = self.FONT_2.render(str(int(minutes)) + ' : ' + str(int(seconds)), True, self.BLACK)
+                else:
+                    time_1 = self.FONT_2.render(str(int(minutes)) + ' : 00', True, self.BLACK)
+                if turn == 0:
+                    minutes = times[1][1] // 60
+                    seconds = times[1][1] - minutes * 60
+                else:
+                    minutes = times[1][0] // 60
+                    seconds = times[1][0] - minutes * 60
+                if seconds:
+                    time_2 = self.FONT_2.render(str(int(minutes)) + ' : ' + str(int(seconds)), True, self.BLACK)
+                else:
+                    time_2 = self.FONT_2.render(str(int(minutes)) + ' : 00', True, self.BLACK)
+                self.WIN.blit(time_1, ((self.clock[0][0].x * 2 + self.clock[0][0].width) / 2 - time_2.get_width() / 2,
                                      (self.clock[0][0].y * 2 + self.clock[0][0].height) / 2 - time_2.get_height() / 2))
+                self.WIN.blit(time_2, ((self.enemy_clock[0][0].x * 2 + self.enemy_clock[0][0].width) / 2 - time_1.get_width() / 2,
+                                     (self.enemy_clock[0][0].y * 2 + self.enemy_clock[0][0].height) / 2 - time_1.get_height() / 2))
 
 
         left_side_text = self.right_site_center - 65
@@ -300,8 +310,8 @@ class Window:
             else:
                 return 3
 
-    def run(self, run, server_status, game_type, move, board, times, game_summary):
-        self.draw(server_status, self.run_status, times)
+    def run(self, run, server_status, game_type, turn, move, board, times, game_summary):
+        self.draw(server_status, self.run_status, times, turn)
 
         for ev in pygame.event.get():
             if ev.type == pygame.MOUSEWHEEL:

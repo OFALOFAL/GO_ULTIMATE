@@ -37,7 +37,7 @@ class Game:
         self.empty_groups = []
         self.hand_points = [0 for _ in range(10)]
         self.tile_points = [0 for _ in range(10)]
-        self.tiles_ammount = 32
+        self.tiles_ammount = 24
         self.tiles = [[-1 for j in range(self.tiles_ammount + 1)]
                       for i in range(self.tiles_ammount + 1)]
         self.tile_size = 48 * 18 / self.tiles_ammount

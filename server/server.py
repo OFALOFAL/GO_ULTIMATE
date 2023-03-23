@@ -97,7 +97,7 @@ def threaded_client(conn, addr):
                 break
             elif data.type['host']['host']:
                 if data.type['host']['wait_for_clients']:
-                    response = Response(game_type=user_info.game_type, host=True, clients_info=lobby.send_clients_info(), server_update=True)
+                    response = Response(game_type=user_info.game_type, host=True, clients_info=lobby.send_clients_info(), times=lobby.times, server_update=True)
                     conn.send(pickle.dumps(response))     # send update to host
                 elif len(data.type['host']['ban_clients']) > 0:
                     for ban in data.type['host']['ban_clients']:
@@ -126,8 +126,7 @@ def threaded_client(conn, addr):
                 elif lobby.ready and data.type['client']['move_req']:
                     if data.turn == lobby.active_turn:
                         if lobby.game.add_move([data.turn, data.move]):
-                            saved_time = lobby.last_move_time
-                            saved_time_left = lobby.times[lobby.active_turn]
+                            update_time = False # this decides if time is updated, time doesn't have to be updated in sending move as the update board is sended constantly anyway
                             server_q_put('client:', data.type['client']['client_addr'],': | turn:', data.turn, '| move:',data.move)
                             turn = data.turn
                             if turn < lobby.clients_limit:
@@ -140,6 +139,7 @@ def threaded_client(conn, addr):
                                 try:
                                     response = Response(board=lobby.game.tiles, active_turn=lobby.active_turn, server_update=True, times=lobby.times, clients_info=lobby.send_clients_info())
                                     client['conn'].send(pickle.dumps(response))
+                                    update_time = True
                                 except ConnectionResetError as e:
                                     if client['role'] == 'HOST' and client['conn'] != conn:
                                         server_q_put('Host closed connection')
@@ -147,18 +147,18 @@ def threaded_client(conn, addr):
                                         break
                                     else:
                                         lobby.active_turn = turn
-                                        lobby.last_move_time = saved_time
-                                        lobby.times[lobby.active_turn] = saved_time_left
+                                        update_time = False
                                         server_q_put('User:', client['id'], 'went offline', e)
                                         strikes += 1
                                 except OSError as e:
                                     lobby.active_turn = turn
-                                    lobby.last_move_time = saved_time
-                                    lobby.times[lobby.active_turn] = saved_time_left
+                                    update_time = False
                                     server_q_put('User:', client['id'], 'went offline', e)
                                     strikes += 1
                                 except TypeError:
                                     pass    # TODO: fix handling exiting clients
+                            if update_time:
+                                lobby.update_time(turn, time.time())
                             turn = next_turn
                         else:
                             server_q_put('client:', data.type['client']['client_addr'],': | turn:', data.turn, '| invalid_move:',data.move)
@@ -169,8 +169,8 @@ def threaded_client(conn, addr):
                     else:
                         server_q_put('turn:', lobby.active_turn, 'got:', data.turn)
                 elif lobby.ready and data.type['client']['game_update_req']:
-                    lobby.update_time()
-                    response = Response(board=lobby.game.tiles, active_turn=lobby.active_turn, server_update=True, times=lobby.times)
+                    lobby.update_time(lobby.active_turn, time.time())
+                    response = Response(board=lobby.game.tiles, active_turn=lobby.active_turn, times=lobby.times, server_update=True)
                     conn.send(pickle.dumps(response))
 
                 temp = []
@@ -197,15 +197,15 @@ def threaded_client(conn, addr):
                 return
 
         except pickle.UnpicklingError as e:
-            server_q_put("Couldn't load data:", e)
+            server_q_put("Couldn't load data:", e, 'UERR')
         except ConnectionAbortedError as e:
-            server_q_put('Client:', addr, 'closed connection', e)
+            server_q_put('Client:', addr, 'closed connection', e, 'CAERR')
             break
         except ConnectionResetError as e:
-            server_q_put('Client:', addr, 'closed connection', e)
+            server_q_put('Client:', addr, 'closed connection', e, 'CRERR')
             break
         except EOFError as e:
-            server_q_put('Client:', addr, 'closed connection', e)
+            server_q_put('Client:', addr, 'closed connection', e, 'EOFERR')
             break
 
     try:

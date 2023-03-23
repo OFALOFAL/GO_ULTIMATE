@@ -40,9 +40,8 @@ class Lobby:
                 ret.append(0)
         return ret
 
-    def update_time(self):
-        end_time =  time.time()
-        self.times[self.active_turn] = round(end_time - self.last_move_time, 2)
+    def update_time(self, turn, end_time):
+        self.times[turn] -= round(end_time - self.last_move_time, 2)
         self.last_move_time = time.time()
 
     def add_client(self, client_conn, role, turn):
