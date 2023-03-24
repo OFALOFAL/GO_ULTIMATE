@@ -112,7 +112,7 @@ class Window:
         self.choosen_limit = 10
 
         self.choosen_board_size = 18
-        self.choosen_board_bar = pygame.Rect((self.right_site_center - 75 + 100 - 2, self.HEIGHT/2 + self.HEIGHT/4.5 - 12), (44, 44))
+        self.choosen_board_bar = pygame.Rect((self.right_site_center - 117.5 + 100 - 2, self.HEIGHT/2 + self.HEIGHT/4.5 - 12), (44, 44))
         self.board_size_tabs = [pygame.Rect((self.right_site_center - 75 + 100 * x, self.HEIGHT/2 + self.HEIGHT/4.5 - 10), (40, 40)) for x in range(2)]
 
         self.BG_IMG = pygame.transform.scale(pygame.image.load(os.path.join('Assets', 'BG_1.png')), (self.WIDTH, self.HEIGHT))
@@ -240,7 +240,7 @@ class Window:
                 pygame.draw.rect(self.WIN, self.BLACK, tab)
                 self.WIN.blit(self.MINI_FONT.render(str(x + 2), True, self.BLACK), (self.right_site_center - 125 + 30 * x, self.HEIGHT/2 + self.HEIGHT/4.5 + 25))
 
-        if self.game.game_type in ['GO', 'GO | 5', 'GO | 10', 'GO | 30', 'SANDBOX']:
+        if self.game.game_type in ['GO', 'GO | 5', 'GO | 10', 'GO | 30']:
             self.player_limit_bar_bg.y = self.HEIGHT / 2 + self.HEIGHT / 4.5 + 5
             board_size_text = self.MINI_FONT.render('Board size', True, self.BLACK)
             self.WIN.blit(board_size_text, (self.right_site_center - board_size_text.get_width() / 2, self.HEIGHT / 2 + self.HEIGHT / 4.5 - 35))
@@ -248,6 +248,17 @@ class Window:
             sizes = ['9x9', '19x19']
             pygame.draw.rect(self.WIN, self.REDDISH, self.choosen_board_bar)
             for x, tab in enumerate(self.board_size_tabs):
+                pygame.draw.rect(self.WIN, self.BLACK, tab)
+                text = self.MINI_FONT.render(sizes[x], True, self.WHITE)
+                self.WIN.blit(text, ((tab.x * 2 + tab.width)/2 - text.get_width()/2, (tab.y * 2 + tab.height)/2 - text.get_height()/2 - 2))
+        elif self.game.game_type == 'SANDBOX':
+            self.player_limit_bar_bg.y = self.HEIGHT / 2 + self.HEIGHT / 4.5 + 5
+            board_size_text = self.MINI_FONT.render('Board size', True, self.BLACK)
+            self.WIN.blit(board_size_text, (self.right_site_center - board_size_text.get_width() / 2, self.HEIGHT / 2 + self.HEIGHT / 4.5 - 35))
+            self.WIN.blit(self.player_limit_bar_s, self.player_limit_bar_bg)
+            sizes = ['9x9', '19x19', '24x24']
+            pygame.draw.rect(self.WIN, self.REDDISH, self.choosen_board_bar)
+            for x, tab in enumerate([pygame.Rect((self.right_site_center - 117.5 + 100 * x, self.HEIGHT/2 + self.HEIGHT/4.5 - 10), (40, 40)) for x in range(3)]):
                 pygame.draw.rect(self.WIN, self.BLACK, tab)
                 text = self.MINI_FONT.render(sizes[x], True, self.WHITE)
                 self.WIN.blit(text, ((tab.x * 2 + tab.width)/2 - text.get_width()/2, (tab.y * 2 + tab.height)/2 - text.get_height()/2 - 2))
@@ -334,11 +345,23 @@ class Window:
             if pygame.mouse.get_pressed()[0] and not self.clicked:
                 for game_type_manage in ((_[1], self.game_modes[x]) for x, _ in enumerate(self.game_modes_buttons[1:])):
                     if game_type_manage[0].contains(mouse):
+                        if self.game.game_type == 'SANDBOX' and not game_type_manage[1] == 'SANDBOX':
+                            if self.game.tiles_ammount == 24:
+                                self.choosen_board_size = 18
+                                self.choosen_board_bar.x -= 57.5
+                            elif self.game.tiles_ammount == 18:
+                                self.choosen_board_bar.x += 42.5
+                            elif self.game.tiles_ammount == 8:
+                                self.choosen_board_bar.x += 42.5
+                        elif not self.game.game_type == 'SANDBOX' and game_type_manage[1] == 'SANDBOX':
+                            if self.game.tiles_ammount == 18:
+                                self.choosen_board_bar.x -= 42
+                            elif self.game.tiles_ammount == 8:
+                                self.choosen_board_bar.x -= 42
                         self.clicked = True
                         if game_type_manage[1] == 'GO NATIONS':
                             self.run_status['show_bar'] = True
                             self.game = Game(game_type_manage[1], players_limit=self.choosen_limit)
-                            
                         else:
                             self.run_status['show_bar'] = False
                             self.game = Game(game_type_manage[1], tiles_ammount=self.choosen_board_size)
@@ -350,9 +373,17 @@ class Window:
                             self.choosen_limit_bar.x = self.right_site_center - 127 + 30 * x
                             self.game = Game('GO NATIONS', players_limit=self.choosen_limit)
                             self.choosen_board_size = self.game.tiles_ammount
-                if self.game.game_type in ['GO', 'GO | 5', 'GO | 10', 'GO | 30', 'SANDBOX']:
+                if self.game.game_type in ['GO', 'GO | 5', 'GO | 10', 'GO | 30']:
                     sizes = [8, 18]
                     for x, tab in enumerate(self.board_size_tabs):
+                        if tab.contains(mouse):
+                            self.clicked = True
+                            self.choosen_board_bar.x = tab.x - 2
+                            self.choosen_board_size = sizes[x]
+                            self.game = Game(self.game.game_type, tiles_ammount=self.choosen_board_size)
+                elif self.game.game_type == 'SANDBOX':
+                    sizes = [8, 18, 24]
+                    for x, tab in enumerate([pygame.Rect((self.right_site_center - 117.5 + 100 * x, self.HEIGHT/2 + self.HEIGHT/4.5 - 10), (40, 40)) for x in range(3)]):
                         if tab.contains(mouse):
                             self.clicked = True
                             self.choosen_board_bar.x = tab.x - 2

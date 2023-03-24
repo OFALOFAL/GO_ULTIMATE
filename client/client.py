@@ -230,27 +230,26 @@ if __name__ == '__main__':
             board = [False, []]
             times = [False, []]
 
-        match window_info:
-            case 'run':
-                run = value
-            case 'connect':
-                game_type, players_limit, tiles_amount = value
-                start_new_thread(connect_thread, (players_limit, tiles_amount))
-            case 'create':
-                game_type, players_limit, tiles_amount = value
-                start_new_thread(create_thread, (players_limit, tiles_amount))
-            case 'disconnect':
-                network = dissconnect(network)
-                board[0] = False
-                times = [False, []]
-                server_status = 'DISCONNECTED'
-            case 'end_game_req':
-                send_end_game_req(network)
-            case 'move':
-                if game_type == 'SANDBOX':
-                    move = ['MOVE', value]
-            case 'del':
-                if game_type == 'SANDBOX':
-                    move = ['DEL', value]
-            case 'exit':
-                break
+        if window_info == 'run':
+            run = value
+        elif window_info == 'connect':
+            game_type, players_limit, tiles_amount = value
+            start_new_thread(connect_thread, (players_limit, tiles_amount))
+        elif window_info == 'create':
+            game_type, players_limit, tiles_amount = value
+            start_new_thread(create_thread, (players_limit, tiles_amount))
+        elif window_info == 'disconnect':
+            network = dissconnect(network)
+            board[0] = False
+            times = [False, []]
+            server_status = 'DISCONNECTED'
+        elif window_info == 'end_game_req':
+            send_end_game_req(network)
+        elif window_info == 'move':
+            if game_type == 'SANDBOX':
+                move = ['MOVE', value]
+        elif window_info == 'del':
+            if game_type == 'SANDBOX':
+                move = ['DEL', value]
+        elif window_info == 'exit':
+            break
