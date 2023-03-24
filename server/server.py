@@ -107,7 +107,7 @@ def threaded_client(conn, addr):
                             pass
             elif data.type['client']['client']:
                 if data.type['client']['lobby_wait']:
-                    conn.send(pickle.dumps(Response(is_ready=lobby.ready, server_update=True)))    # send update to user
+                    conn.send(pickle.dumps(Response(is_ready=lobby.ready, clients_info=lobby.send_clients_info(), server_update=True)))    # send update to user
                 elif data.type['client']['start_game_req']:     # update server
                     lobby.ready = True    # start lobby
                     lobby.clients_limit = len(lobby.clients) - 1    # cut new joining players
@@ -170,7 +170,7 @@ def threaded_client(conn, addr):
                         server_q_put('turn:', lobby.active_turn, 'got:', data.turn)
                 elif lobby.ready and data.type['client']['game_update_req']:
                     lobby.update_time(lobby.active_turn, time.time())
-                    response = Response(board=lobby.game.tiles, active_turn=lobby.active_turn, times=lobby.times, server_update=True)
+                    response = Response(board=lobby.game.tiles, active_turn=lobby.active_turn, times=lobby.times, server_update=True, clients_info=lobby.send_clients_info())
                     conn.send(pickle.dumps(response))
 
                 temp = []

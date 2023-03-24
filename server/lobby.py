@@ -33,7 +33,17 @@ class Lobby:
         ret = []
         for client in self.clients:
             try:
-                ret.append([client['conn'].getsockname(), client['role'], client['id'], client['turn'], client['end_game'], client['hand_points'], client['tile_points']])
+                ret.append(
+                    {
+                        'conn': client['conn'].getsockname(),
+                        'role': client['role'],
+                        'id': client['id'],
+                        'turn': client['turn'],
+                        'end_game': client['end_game'],
+                        'hand_points': client['hand_points'],
+                        'tile_points': client['tile_points']
+                    }
+                )
             except OSError:
                 ret.append(0)
             except TypeError:

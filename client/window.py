@@ -138,7 +138,7 @@ class Window:
         self.enemy_clock = ((pygame.Rect((self.right_site_center - 200 - 5 - 150, self.board_margin_top), (150, 40)), self.BLACK),
                       (pygame.Rect((self.right_site_center - 200 - 5 - 145, self.board_margin_top + 4), (140, 32)), self.LIGHT_GREY))
 
-    def draw(self, server_status, run_status, times, turn):
+    def draw(self, server_status, run_status, times, turn, clients_info):
         self.WIN.blit(self.BG_IMG, (0, 0))
         self.WIN.blit(self.right_border_s, self.right_border)
 
@@ -218,17 +218,33 @@ class Window:
         right_side_text = self.right_site_center + 75
         pygame.draw.rect(self.WIN, self.REDDISH, self.game_modes_bg)
         pygame.draw.rect(self.WIN, self.REDDISH, self.game_mode_btn)
-        row = 0
-        for x, game_mode_text in enumerate(self.game_modes_text):
-            if x % 2 == 0:
-                row += 7
-                self.WIN.blit(game_mode_text, (left_side_text - game_mode_text.get_width()/2, self.HEIGHT / 5 + row * game_mode_text.get_height()))
-            else:
-                self.WIN.blit(game_mode_text, (right_side_text - game_mode_text.get_width()/2, self.HEIGHT / 5 + row * game_mode_text.get_height()))
-        for button in self.game_modes_buttons:
-            self.WIN.blit(*button)
+        if not self.run_status['connected']:
+            row = 0
+            for x, game_mode_text in enumerate(self.game_modes_text):
+                if x % 2 == 0:
+                    row += 7
+                    self.WIN.blit(game_mode_text, (left_side_text - game_mode_text.get_width()/2, self.HEIGHT / 5 + row * game_mode_text.get_height()))
+                else:
+                    self.WIN.blit(game_mode_text, (right_side_text - game_mode_text.get_width()/2, self.HEIGHT / 5 + row * game_mode_text.get_height()))
+            for button in self.game_modes_buttons:
+                self.WIN.blit(*button)
 
-        self.WIN.blit(self.game_mode_text, (self.right_site_center - self.game_mode_text.get_width()/2, self.HEIGHT / 5 + 15))
+            self.WIN.blit(self.game_mode_text, (self.right_site_center - self.game_mode_text.get_width()/2, self.HEIGHT / 5 + 15))
+        else:
+            # TODO: turn to table like look with names of property at top
+            for x, client in enumerate(clients_info):
+                name = self.SMALL_FONT.render('Client: '+str(client['id']), True, self.BLACK)    # TODO: change it to use name when added max name len 9
+                self.WIN.blit(name, (self.right_site_center - 100 - name.get_width()/2, self.game_modes_bg.y + 30 + (30 + name.get_height()) * x))
+                role = self.SMALL_FONT.render(client['role'], True, self.BLACK)  # TODO: change it to use name when added
+                self.WIN.blit(role, (self.right_site_center - role.get_width()/2, self.game_modes_bg.y + 30 + (30 + role.get_height()) * x))
+                end_game = self.SMALL_FONT.render('end game: '+str(client['end_game']), True, self.BLACK)  # TODO: change it to use name when added
+                self.WIN.blit(end_game, (self.right_site_center + 50 - end_game.get_width() / 2, self.game_modes_bg.y + 30 + (30 + end_game.get_height()) * x))
+            if len(clients_info) == 0:
+                wait_text = self.SMALL_FONT.render('Waiting for clients...', True, self.BLACK)
+                self.WIN.blit(wait_text, (self.right_site_center - wait_text.get_width()/2, self.HEIGHT/2 - 50))
+
+            self.WIN.blit(*self.game_modes_buttons[0])
+            self.WIN.blit(self.game_mode_text, (self.right_site_center - self.game_mode_text.get_width() / 2, self.HEIGHT / 5 + 15))
 
         if self.run_status['show_bar']:
             self.player_limit_bar_bg.y = self.HEIGHT/2 + self.HEIGHT/4.5
@@ -321,8 +337,8 @@ class Window:
             else:
                 return 3
 
-    def run(self, run, server_status, game_type, turn, move, board, times, game_summary):
-        self.draw(server_status, self.run_status, times, turn)
+    def run(self, run, server_status, game_type, turn, move, board, times, game_summary, clients_info):
+        self.draw(server_status, self.run_status, times, turn, clients_info)
 
         for ev in pygame.event.get():
             if ev.type == pygame.MOUSEWHEEL:
