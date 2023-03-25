@@ -65,10 +65,15 @@ def threaded_client(conn, addr):
             if l.game_type == user_info.game_type and l.game.tiles_ammount == user_info.type['client']['tiles_amount'] and l.client_count < l.clients_limit and not l.closed:
                 is_available = True
                 turn = 0
-                for c in l.clients:
-                    if c != 0:
+                replaced = False
+                for x, c in enumerate(l.clients):
+                    if not c['left']:
                         turn += 1
-                l.add_client(conn, 'USER', turn)
+                    else:
+                        replaced = True
+                        l.replace_client(conn, 'CLIENT', x)
+                if not replaced:
+                    l.add_client(conn, 'CLIENT', turn)
                 lobby = l
                 conn.send(pickle.dumps(Response(game_type=user_info.game_type, turn=turn, server_update=True)))   # send clients turn
                 server_q_put('Connected to lobby:', lobby.id)
@@ -78,7 +83,7 @@ def threaded_client(conn, addr):
             user_info.create_req = True
 
     if user_info.create_req:
-        lobbies.append(Lobby(conn, 1, user_info.game_type, len(lobbies), user_info.type['client']['players_limit'], user_info.type['client']['tiles_amount']))
+        lobbies.append(Lobby(conn, user_info.game_type, len(lobbies), user_info.type['client']['players_limit'], user_info.type['client']['tiles_amount']))
         lobby = lobbies[-1]
         lobby.active_turn = turn
         conn.send(pickle.dumps(Response(user_info.game_type, addr=addr, turn=turn, host=True, server_update=True)))   # send clients turn
@@ -118,54 +123,41 @@ def threaded_client(conn, addr):
 
                 if data.end_game_req:
                     for client in lobby.clients:
-                        server_q_put('Sending end game request to:', client['conn'].getsockname())
-                        response = Response(end_game_req=True, server_update=True)
-                        client['conn'].send(pickle.dumps(response))
                         if client['conn'] == conn:
-                            client['end_game'] = True
+                            client['end_game'] = not client['end_game']
                 elif lobby.ready and data.type['client']['move_req']:
                     if data.turn == lobby.active_turn:
                         if lobby.game.add_move([data.turn, data.move]):
                             update_time = False # this decides if time is updated, time doesn't have to be updated in sending move as the update board is sended constantly anyway
-                            server_q_put('client:', data.type['client']['client_addr'],': | turn:', data.turn, '| move:',data.move)
+                            server_q_put('Client:', data.type['client']['client_addr'],': | turn:', data.turn, '| move:',data.move)
                             turn = data.turn
                             if turn < lobby.clients_limit:
                                 next_turn = turn+1
                             else:
                                 next_turn = 0
                             lobby.active_turn = next_turn
-                            for client in lobby.clients:
-                                client['points'] = lobby.game.hand_points[client['turn']] + lobby.game.tile_points[client['turn']]
-                                try:
-                                    response = Response(board=lobby.game.tiles, active_turn=lobby.active_turn, server_update=True, times=lobby.times, clients_info=lobby.send_clients_info())
-                                    client['conn'].send(pickle.dumps(response))
-                                    update_time = True
-                                except ConnectionResetError as e:
-                                    if client['role'] == 'HOST' and client['conn'] != conn:
-                                        server_q_put('Host closed connection')
-                                        conn.send(pickle.dumps(Response(exit_req=True)))    # send msg to player that host has already endet this lobby
-                                        break
-                                    else:
+                            for x, client in enumerate(lobby.clients):
+                                client['hand_points'] = lobby.game.hand_points[x]
+                                client['tile_points'] = lobby.game.tile_points[x]
+                                if not client['left']:
+                                    try:
+                                        response = Response(board=lobby.game.tiles, active_turn=lobby.active_turn, server_update=True, times=lobby.times, clients_info=lobby.send_clients_info())
+                                        client['conn'].send(pickle.dumps(response))
+                                        update_time = True
+                                    except ConnectionResetError:
+                                        server_q_put('update')
                                         lobby.active_turn = turn
                                         update_time = False
-                                        server_q_put('User:', client['id'], 'went offline', e)
-                                        strikes += 1
-                                except OSError as e:
-                                    lobby.active_turn = turn
+                                    except OSError:
+                                        lobby.active_turn = turn
+                                        update_time = False
+                                else:
                                     update_time = False
-                                    server_q_put('User:', client['id'], 'went offline', e)
-                                    strikes += 1
-                                except TypeError:
-                                    pass    # TODO: fix handling exiting clients
                             if update_time:
                                 lobby.update_time(turn, time.time())
                             turn = next_turn
                         else:
                             server_q_put('client:', data.type['client']['client_addr'],': | turn:', data.turn, '| invalid_move:',data.move)
-                            for t in lobby.times:
-                                if t <= 0:
-                                    server_q_put('Closing lobby:', lobby.id)
-                                    conn.send(pickle.dumps(Response(board=lobby.game.tiles, game_summary=True, times=lobby.times, clients_info=lobby.send_clients_info())))
                     else:
                         server_q_put('turn:', lobby.active_turn, 'got:', data.turn)
                 elif lobby.ready and data.type['client']['game_update_req']:
@@ -173,12 +165,16 @@ def threaded_client(conn, addr):
                     response = Response(board=lobby.game.tiles, active_turn=lobby.active_turn, times=lobby.times, server_update=True, clients_info=lobby.send_clients_info())
                     conn.send(pickle.dumps(response))
 
+                if lobby.game_type in ['GO | 5', 'GO | 10', 'GO | 30']:
+                    for t in lobby.times:
+                        print(lobby.times)
+                        if t <= 1:
+                            server_q_put('Closing lobby:', lobby.id)
+                            conn.send(pickle.dumps(Response(board=lobby.game.tiles, game_summary=True, times=lobby.times, clients_info=lobby.send_clients_info())))
+
                 temp = []
                 for client in lobby.clients:
-                    try:
-                        temp.append(client['end_game'])
-                    except TypeError:
-                        pass
+                    temp.append(client['end_game'])
                 end_game = all(temp)
                 if end_game:
                     server_q_put('Closing lobby:', lobby.id)
@@ -208,33 +204,13 @@ def threaded_client(conn, addr):
             server_q_put('Client:', addr, 'closed connection', e, 'EOFERR')
             break
 
-    try:
-        server_q_put("Lost connection with client:", user_info.type['client']['client_addr'], lobby.clients[client_id-1]['role'])
-    except:
-        pass
-    if host:
+    server_q_put("Lost connection with client:", user_info.type['client']['client_addr'], lobby.clients[client_id-1]['role'])
+    lobby.remove_client(lobby.active_turn)
+    if lobby.client_count == 1:  # if only 1 is playing
         for client in lobby.clients:
-            if client == 0:
-                continue
-            try:
-                client['conn'].send(pickle.dumps(Response(exit_req=True)))    # if host closet lobby remove all clients from lobby
-            except ConnectionResetError:    # if it's host or already closed connection then just continue
-                pass
-            except TypeError:   # if connection is unrelible than just continue
-                pass
-            except OSError:
-                pass
-        lobbies.remove(lobby)   # remove lobby when everyone has disconnected
-        server_q_put("Closing Lobby:", lobby.id)
-    elif lobby.client_count == 1:
-        try:
-            lobby.client_count -= 1
-            lobbies.remove(lobby)
-            server_q_put("Closing Lobby:", lobby.id)
-        except:
-            pass
-    else:
-        lobby.remove_client(turn)
+            if not client['left']:
+                client['conn'].send(pickle.dumps(Response(board=lobby.game.tiles, game_summary=True, times=lobby.times, clients_info=lobby.send_clients_info())))
+        lobbies.remove(lobby)
     conn.close()
 
 def handle_clients():

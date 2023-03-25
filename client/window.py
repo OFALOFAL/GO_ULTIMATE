@@ -130,57 +130,80 @@ class Window:
                 valid = True
             self.colors.append(color)
         self.currently_placing = 0
-        self.run_status = {'con_clicked': False, 'exit_clicked': False, 'go_clicked': False, 'show_bar': False, 'connected': False}
+        self.run_status = {'con_clicked': False, 'exit_clicked': False, 'go_clicked': False, 'show_bar': False, 'connected': False, 'game_summary': False}
         self.last_move = []
         self.clicked = False
         self.clock = ((pygame.Rect((self.right_site_center - 200 - 5 - 150, self.HEIGHT - self.board_margin_top - 40), (150, 40)), self.BLACK),
                       (pygame.Rect((self.right_site_center - 200 - 5 - 145, self.HEIGHT - self.board_margin_top - 36), (140, 32)), self.LIGHT_GREY))
         self.enemy_clock = ((pygame.Rect((self.right_site_center - 200 - 5 - 150, self.board_margin_top), (150, 40)), self.BLACK),
                       (pygame.Rect((self.right_site_center - 200 - 5 - 145, self.board_margin_top + 4), (140, 32)), self.LIGHT_GREY))
+        self.game_summary_bg = pygame.Rect((self.WIDTH/2 - 150, self.HEIGHT/2 - 250), (500, 500))
+        self.game_summary_exit_btn = pygame.Rect((self.game_summary_bg.x + self.game_summary_bg.width/2 - 75, self.game_summary_bg.y + self.game_summary_bg.height - 45),
+                                                 (150, 70))
+        self.game_summary_exit_text = self.SMALL_FONT.render('EXIT', True, self.BLACK)
 
-    def draw(self, server_status, run_status, times, turn, clients_info):
+    def draw(self, server_status, run_status, times, turn, clients_info, game_summary):
         self.WIN.blit(self.BG_IMG, (0, 0))
         self.WIN.blit(self.right_border_s, self.right_border)
 
-        if self.game.game_type == 'SANDBOX':
-            self.WIN.blit(self.SCORE_TABLE, (10, self.board_margin_top))
+        self.WIN.blit(self.SCORE_TABLE, (10, self.board_margin_top))
+        for line in self.score_horizontal_lines:
+            pygame.draw.rect(self.WIN, self.BLACK, line)
+        for line in self.score_vertical_lines:
+            pygame.draw.rect(self.WIN, self.BLACK, line)
 
-            for line in self.score_horizontal_lines:
-                pygame.draw.rect(self.WIN, self.BLACK, line)
+        for x, color in enumerate(self.colors):
+            pygame.draw.rect(self.WIN, self.GREY,
+                             pygame.Rect((21, self.board_margin_top + 30 + 27 + (x + 1) * ((self.HEIGHT - 2 * self.board_margin_top - 20)/10) -
+                                          ((self.HEIGHT - 2 * self.board_margin_top - 20)/10)),
+                                         (34, 34))
+                             )
+            pygame.draw.rect(self.WIN, color,
+                             pygame.Rect((23, self.board_margin_top + 30 + 29 + (x + 1) * ((self.HEIGHT - 2 * self.board_margin_top - 20)/10) -
+                                          ((self.HEIGHT - 2 * self.board_margin_top - 20)/10)),
+                                         (30, 30))
+                             )
 
-            for line in self.score_vertical_lines:
-                pygame.draw.rect(self.WIN, self.BLACK, line)
+        self.WIN.blit(self.SCORE_TEXT_1, (87, self.board_margin_top + 1))
+        self.WIN.blit(self.SCORE_TEXT_2, (78, self.board_margin_top + self.SCORE_TEXT_1.get_height()))
+        self.WIN.blit(self.SCORE_TEXT_3, (24, self.board_margin_top + self.SCORE_TEXT_2.get_height()/2 + 1))
 
-            for x, color in enumerate(self.colors):
-                pygame.draw.rect(self.WIN, self.GREY,
-                                    pygame.Rect((21, self.board_margin_top + 30 + 27 + (x + 1) * ((self.HEIGHT - 2 * self.board_margin_top - 20)/10) -
-                                                 ((self.HEIGHT - 2 * self.board_margin_top - 20)/10)),
-                                    (34, 34))
-                                 )
-                pygame.draw.rect(self.WIN, color,
-                                    pygame.Rect((23, self.board_margin_top + 30 + 29 + (x + 1) * ((self.HEIGHT - 2 * self.board_margin_top - 20)/10) -
-                                                 ((self.HEIGHT - 2 * self.board_margin_top - 20)/10)),
-                                    (30, 30))
-                                 )
-
-            self.WIN.blit(self.SCORE_TEXT_1, (87, self.board_margin_top + 1))
-            self.WIN.blit(self.SCORE_TEXT_2, (78, self.board_margin_top + self.SCORE_TEXT_1.get_height()))
-            self.WIN.blit(self.SCORE_TEXT_3, (24, self.board_margin_top + self.SCORE_TEXT_2.get_height()/2 + 1))
-
+        if not self.run_status['connected']:
             for x, tile_points in enumerate(self.game.tile_points):
                 text = self.SMALL_FONT.render(str(tile_points), True, self.BLACK)
                 self.WIN.blit(text,
                               (100 - text.get_width()/2, self.board_margin_top + 25 + 35 + (x + 1) * ((self.HEIGHT - 2 * self.board_margin_top - 20)/10) -
-                                                 ((self.HEIGHT - 2 * self.board_margin_top - 20)/10))
+                               ((self.HEIGHT - 2 * self.board_margin_top - 20)/10))
                               )
 
             for x, hand_points in enumerate(self.game.hand_points):
                 text = self.SMALL_FONT.render(str(hand_points), True, self.BLACK)
                 self.WIN.blit(text,
                               (155 - text.get_width()/2, self.board_margin_top + 25 + 35 + (x + 1) * ((self.HEIGHT - 2 * self.board_margin_top - 20)/10) -
-                                                 ((self.HEIGHT - 2 * self.board_margin_top - 20)/10))
+                               ((self.HEIGHT - 2 * self.board_margin_top - 20)/10))
                               )
-        elif self.game.game_type not in ['GO', 'GO NATIONS']:
+        else:
+            all_tile_points = [client['tile_points'] for client in clients_info]
+            for _ in range(10 - len(all_tile_points)):
+                all_tile_points.append('-')
+            for x, tile_points in enumerate(all_tile_points):
+                text = self.SMALL_FONT.render(str(tile_points), True, self.BLACK)
+                self.WIN.blit(text,
+                              (100 - text.get_width()/2, self.board_margin_top + 25 + 35 + (x + 1) * ((self.HEIGHT - 2 * self.board_margin_top - 20)/10) -
+                               ((self.HEIGHT - 2 * self.board_margin_top - 20)/10))
+                              )
+
+            all_hand_points = [client['hand_points'] for client in clients_info]
+            for _ in range(10 - len(all_hand_points)):
+                all_hand_points.append('-')
+            for x, hand_points in enumerate(all_hand_points):
+                text = self.SMALL_FONT.render(str(hand_points), True, self.BLACK)
+                self.WIN.blit(text,
+                              (155 - text.get_width()/2, self.board_margin_top + 25 + 35 + (x + 1) * ((self.HEIGHT - 2 * self.board_margin_top - 20)/10) -
+                               ((self.HEIGHT - 2 * self.board_margin_top - 20)/10))
+                              )
+
+        if self.game.game_type not in ['SANDBOX', 'GO', 'GO NATIONS']:
             for piece in self.clock:
                 pygame.draw.rect(self.WIN, piece[1], piece[0])
             for piece in self.enemy_clock:
@@ -188,14 +211,17 @@ class Window:
             if not self.run_status['connected'] or not times[0]:
                 time = self.FONT_2.render(str(self.game.time) + ' : 00', True, self.BLACK)
                 self.WIN.blit(time, ((self.clock[0][0].x * 2 + self.clock[0][0].width) / 2 - time.get_width() / 2,
-                                       (self.clock[0][0].y * 2 + self.clock[0][0].height) / 2 - time.get_height() / 2))
+                                     (self.clock[0][0].y * 2 + self.clock[0][0].height) / 2 - time.get_height() / 2))
                 self.WIN.blit(time, ((self.enemy_clock[0][0].x * 2 + self.enemy_clock[0][0].width) / 2 - time.get_width() / 2,
-                                       (self.enemy_clock[0][0].y * 2 + self.enemy_clock[0][0].height) / 2 - time.get_height() / 2))
+                                     (self.enemy_clock[0][0].y * 2 + self.enemy_clock[0][0].height) / 2 - time.get_height() / 2))
             else:
                 minutes = times[1][turn] // 60
                 seconds = times[1][turn] - minutes * 60
                 if seconds:
-                    time_1 = self.FONT_2.render(str(int(minutes)) + ' : ' + str(int(seconds)), True, self.BLACK)
+                    if seconds < 10:
+                        time_1 = self.FONT_2.render(str(int(minutes)) + ' : 0' + str(int(seconds)), True, self.BLACK)
+                    else:
+                        time_1 = self.FONT_2.render(str(int(minutes)) + ' : ' + str(int(seconds)), True, self.BLACK)
                 else:
                     time_1 = self.FONT_2.render(str(int(minutes)) + ' : 00', True, self.BLACK)
                 if turn == 0:
@@ -209,9 +235,9 @@ class Window:
                 else:
                     time_2 = self.FONT_2.render(str(int(minutes)) + ' : 00', True, self.BLACK)
                 self.WIN.blit(time_1, ((self.clock[0][0].x * 2 + self.clock[0][0].width) / 2 - time_2.get_width() / 2,
-                                     (self.clock[0][0].y * 2 + self.clock[0][0].height) / 2 - time_2.get_height() / 2))
+                                       (self.clock[0][0].y * 2 + self.clock[0][0].height) / 2 - time_2.get_height() / 2))
                 self.WIN.blit(time_2, ((self.enemy_clock[0][0].x * 2 + self.enemy_clock[0][0].width) / 2 - time_1.get_width() / 2,
-                                     (self.enemy_clock[0][0].y * 2 + self.enemy_clock[0][0].height) / 2 - time_1.get_height() / 2))
+                                       (self.enemy_clock[0][0].y * 2 + self.enemy_clock[0][0].height) / 2 - time_1.get_height() / 2))
 
 
         left_side_text = self.right_site_center - 65
@@ -231,14 +257,22 @@ class Window:
 
             self.WIN.blit(self.game_mode_text, (self.right_site_center - self.game_mode_text.get_width()/2, self.HEIGHT / 5 + 15))
         else:
-            # TODO: turn to table like look with names of property at top
+            top_margin = 300/(len(clients_info)+1)
+            beetwen_space = (500 - 20 * len(clients_info))/(len(clients_info)+1)
+            up_text= self.SMALL_FONT.render('        Name         Role       End   ', True, self.BLACK)
+            self.WIN.blit(up_text, (self.right_site_center - up_text.get_width()/2, self.game_modes_bg.y + 5))
             for x, client in enumerate(clients_info):
+                color = pygame.Rect((self.right_site_center - 135, self.game_modes_bg.y + 1 + top_margin + (beetwen_space * x)), (20, 20))
+                pygame.draw.rect(self.WIN, self.colors[client['turn']], color)
                 name = self.SMALL_FONT.render('Client: '+str(client['id']), True, self.BLACK)    # TODO: change it to use name when added max name len 9
-                self.WIN.blit(name, (self.right_site_center - 100 - name.get_width()/2, self.game_modes_bg.y + 30 + (30 + name.get_height()) * x))
-                role = self.SMALL_FONT.render(client['role'], True, self.BLACK)  # TODO: change it to use name when added
-                self.WIN.blit(role, (self.right_site_center - role.get_width()/2, self.game_modes_bg.y + 30 + (30 + role.get_height()) * x))
-                end_game = self.SMALL_FONT.render('end game: '+str(client['end_game']), True, self.BLACK)  # TODO: change it to use name when added
-                self.WIN.blit(end_game, (self.right_site_center + 50 - end_game.get_width() / 2, self.game_modes_bg.y + 30 + (30 + end_game.get_height()) * x))
+                self.WIN.blit(name, (self.right_site_center - 140 + name.get_width()/2, self.game_modes_bg.y + top_margin + (beetwen_space * x)))
+                role = self.SMALL_FONT.render(client['role'], True, self.BLACK)
+                self.WIN.blit(role, (self.right_site_center + 30 - role.get_width()/2, self.game_modes_bg.y + top_margin + (beetwen_space * x)))
+                if client['end_game']:
+                    end_game = self.SMALL_FONT.render('Yes', True, self.BLACK)
+                else:
+                    end_game = self.SMALL_FONT.render('No', True, self.BLACK)
+                self.WIN.blit(end_game, (self.right_site_center + 105 - end_game.get_width()/2, self.game_modes_bg.y + top_margin + (beetwen_space * x)))
             if len(clients_info) == 0:
                 wait_text = self.SMALL_FONT.render('Waiting for clients...', True, self.BLACK)
                 self.WIN.blit(wait_text, (self.right_site_center - wait_text.get_width()/2, self.HEIGHT/2 - 50))
@@ -317,10 +351,53 @@ class Window:
             for j, move in enumerate(row):
                 if move != -1:
                     pygame.draw.circle(self.WIN, self.colors[move],
-                        (j * self.game.tile_size + (self.game.tile_size / 4) + self.board_margin_left - (1/self.game.tiles_ammount * 450) / 2,
-                         i * self.game.tile_size + (self.game.tile_size / 4) + self.board_margin_top - (1/self.game.tiles_ammount * 450) / 2),
-                        1/self.game.tiles_ammount * 320
-                    )
+                                       (j * self.game.tile_size + (self.game.tile_size / 4) + self.board_margin_left - (1/self.game.tiles_ammount * 450) / 2,
+                                        i * self.game.tile_size + (self.game.tile_size / 4) + self.board_margin_top - (1/self.game.tiles_ammount * 450) / 2),
+                                       1/self.game.tiles_ammount * 320
+                                       )
+
+        if self.run_status['game_summary']:
+            self.game_summary_bg.height = 200 + len(clients_info) * 30
+            self.game_summary_bg.y = self.HEIGHT/2 - self.game_summary_bg.height/2
+            self.game_summary_exit_btn.y = self.game_summary_bg.y + self.game_summary_bg.height - self.game_summary_exit_btn.height - 10
+            pygame.draw.rect(self.WIN, self.GREY, self.game_summary_bg)
+            pygame.draw.rect(self.WIN, self.REDDISH, self.game_summary_exit_btn)
+            self.WIN.blit(self.game_summary_exit_text, (self.game_summary_exit_btn.x + self.game_summary_exit_btn.width/2 - self.game_summary_exit_text.get_width()/2,
+                                                        self.game_summary_exit_btn.y + self.game_summary_exit_btn.height/2 - self.game_summary_exit_text.get_height()/2))
+
+            sorted_clients_info = [[client['tile_points']+client['hand_points'], client['turn']] for client in clients_info]
+            n = len(sorted_clients_info)
+            for i in range(n):
+                swapped = False
+                for j in range(0, n - i - 1):
+                    if sorted_clients_info[j][0] > sorted_clients_info[j + 1][0]:
+                        sorted_clients_info[j], sorted_clients_info[j + 1] = sorted_clients_info[j + 1], sorted_clients_info[j]
+                if not swapped:
+                    break
+            top_margin = 45
+            end_game_text = self.FONT_2.render('GAME ENDED', True, self.BLACK)
+            self.WIN.blit(end_game_text, (self.game_summary_bg.x + self.game_summary_bg.width/2 - end_game_text.get_width()/2,
+                                          self.game_summary_bg.y + end_game_text.get_height() + 5))
+            for x, client in enumerate(sorted_clients_info):
+                place = str(x+1)
+                if x == 0 or client[0] == sorted_clients_info[0][0]:
+                    pygame.draw.rect(self.WIN, self.GOLD, pygame.Rect((self.game_summary_bg.x + 10, self.game_summary_bg.y + top_margin + 30 * (x + 1)),(480, 30)))
+                    place = '1'
+                elif x % 2 == 0:
+                    pygame.draw.rect(self.WIN, self.LIGHT_GREY, pygame.Rect((self.game_summary_bg.x + 10, self.game_summary_bg.y + top_margin + 30 * (x + 1)),(480, 30)))
+                else:
+                    pygame.draw.rect(self.WIN, self.WHITE, pygame.Rect((self.game_summary_bg.x + 10, self.game_summary_bg.y + top_margin + 30 * (x + 1)),(480, 30)))
+
+                if not x == 0:
+                    pygame.draw.rect(self.WIN, self.BLACK, pygame.Rect((self.game_summary_bg.x + 10, self.game_summary_bg.y + top_margin + 30 * (x + 1)), (480, 1)))
+
+                # TODO: change it to use name when added max name len 9
+
+                number_text = self.SMALL_FONT.render(place+')', True, self.BLACK)
+                self.WIN.blit(number_text, (self.game_summary_bg.x + 50, self.game_summary_bg.y + top_margin + 30 * (x + 1) + 5))
+                points_text = self.SMALL_FONT.render('Client: '+str(client[1])+'          Points:'+str(client[0]), True, self.BLACK)
+                self.WIN.blit(points_text, (self.WIDTH/2, self.game_summary_bg.y + top_margin + 30 * (x + 1) + 5))
+                pygame.draw.rect(self.WIN, self.colors[client[1]], pygame.Rect((self.game_summary_bg.x + 20, self.game_summary_bg.y + top_margin + 30 * (x + 1) + 5), (20, 20)))
 
         pygame.display.update()
 
@@ -338,7 +415,9 @@ class Window:
                 return 3
 
     def run(self, run, server_status, game_type, turn, move, board, times, game_summary, clients_info):
-        self.draw(server_status, self.run_status, times, turn, clients_info)
+        self.draw(server_status, self.run_status, times, turn, clients_info, game_summary)
+        if game_summary:
+            self.run_status['game_summary'] = True
 
         for ev in pygame.event.get():
             if ev.type == pygame.MOUSEWHEEL:
@@ -359,6 +438,10 @@ class Window:
             
             mouse = pygame.Rect(pygame.mouse.get_pos(), (1, 1))
             if pygame.mouse.get_pressed()[0] and not self.clicked:
+                if self.run_status['game_summary']:
+                    if self.game_summary_exit_btn.contains(mouse):
+                        self.run_status['game_summary'] = False
+                        return 'end_game_summary', run
                 for game_type_manage in ((_[1], self.game_modes[x]) for x, _ in enumerate(self.game_modes_buttons[1:])):
                     if game_type_manage[0].contains(mouse):
                         if self.game.game_type == 'SANDBOX' and not game_type_manage[1] == 'SANDBOX':
@@ -383,7 +466,7 @@ class Window:
                             self.game = Game(game_type_manage[1], tiles_ammount=self.choosen_board_size)
                 if self.run_status['show_bar']:
                     for x, tab in enumerate(self.player_limit_tabs):
-                        if tab.contains(mouse):
+                        if tab.contains(mouse) and not self.run_status['connected']:
                             self.clicked = True
                             self.choosen_limit = x + 2
                             self.choosen_limit_bar.x = self.right_site_center - 127 + 30 * x
@@ -469,11 +552,10 @@ class Window:
         elif server_status == 'DISCONNECTED':
             self.run_status['connected'] = False
 
-        if game_summary[0]:
+        if game_summary:
             self.run_status['connected'] = False
-            # TODO: write on screen the scores
 
         if server_status == 'END_GAME_REQ':
             pass    # TODO: change to ask player if he wants to end the game
 
-        return 'run', run
+        return 'run', [run, self.game.game_type]

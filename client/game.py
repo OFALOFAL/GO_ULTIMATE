@@ -73,8 +73,11 @@ class Game:
 
     def remove_move(self, move):
         if self.game_type == 'SANDBOX':
-            if self.tiles[move[0]][move[1]] != -1:
-                self.tiles[move[0]][move[1]] = -1
+            try:
+                if self.tiles[move[0]][move[1]] != -1:
+                    self.tiles[move[0]][move[1]] = -1
+            except IndexError:
+                pass
         self.count_tile_points()
 
     def remove_enclosed_groups(self, tiles, by_group, last_move_info):

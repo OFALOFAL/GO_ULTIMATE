@@ -15,7 +15,7 @@ class Game:
         if self.game_type == 'GO':
             self.setup_go(False, tiles_ammount)
         elif self.game_type in ['GO | 5', 'GO | 10', 'GO | 30']:
-            time = self.game_type.split('| ')[1]
+            time = 1    # self.game_type.split('| ')[1]
             self.setup_go(int(time), tiles_ammount)
         elif self.game_type == 'GO NATIONS':
             self.setup_go_nations(players_limit)
