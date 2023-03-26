@@ -4,7 +4,7 @@ class Response:
                  game_type='', move=[], board=[], turn=0, addr='', is_ready=False, end_game_req=False, active_turn=False,
                  # client distinct request:
                  create_req=False, connect_req=False, start_game_req=False, lobby_wait=False, password='', client_is_ready=False, players_limit = 2,
-                 tiles_amount = 18, game_update_req=False, move_req=False,
+                 tiles_amount = 18, game_update_req=False, move_req=False, client_name='',
                  # server distinct request:
                  validate_req=False, change_move_req=False, client_status=None, exit_req=False, server_update=False, game_summary = False, clients_info = [], times=[],
                  # host distinct request:
@@ -28,7 +28,9 @@ class Response:
                 'players_limit': players_limit,
                 'tiles_amount': tiles_amount,
                 'game_update_req': game_update_req,
-                'move_req': move_req
+                'move_req': move_req,
+                'end_game_req': end_game_req,
+                'client_name': client_name
             },
             'server': {
                 'server': validate_req or change_move_req or exit_req or is_ready or server_update or game_summary,
@@ -45,7 +47,7 @@ class Response:
             'host': {   # nescessery host information
                 'host': host,
                 'wait_for_clients': wait_for_clients,
-                'ban_clients': ban_clients
+                'ban_clients': ban_clients,
             }
         }
 
@@ -82,7 +84,6 @@ class Response:
             self.create_req = create_req
             self.connect_req = connect_req
             self.is_ready = is_ready or client_is_ready
-            self.end_game_req = end_game_req
             self.active_turn = active_turn
         else:
             return

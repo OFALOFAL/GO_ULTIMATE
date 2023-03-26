@@ -3,7 +3,7 @@ from server_message_queue import server_q_put
 import time
 
 class Lobby:
-    def __init__(self, client_conn, game_type, client_id, players_limit, tiles_ammount):
+    def __init__(self, client_conn, game_type, client_id, players_limit, tiles_ammount, name):
         self.id = client_id
         self.clients = [
             {
@@ -15,7 +15,7 @@ class Lobby:
                 'hand_points': 0,
                 'tile_points': 0,
                 'left': False,
-                #name: name TODO: add name
+                'name': name
             }
         ]
         self.host = self.clients[0]
@@ -41,7 +41,8 @@ class Lobby:
                     'end_game': client['end_game'],
                     'hand_points': client['hand_points'],
                     'tile_points': client['tile_points'],
-                    'left': client['left']
+                    'left': client['left'],
+                    'name': client['name']
                 }
             )
         return ret
@@ -50,7 +51,7 @@ class Lobby:
         self.times[turn] -= round(end_time - self.last_move_time, 2)
         self.last_move_time = time.time()
 
-    def add_client(self, client_conn, role, turn):
+    def add_client(self, client_conn, role, turn, name):
         self.client_count += 1
         self.clients.append(
             {
@@ -61,13 +62,15 @@ class Lobby:
                 'end_game': False,
                 'hand_points': 0,
                 'tile_points': 0,
-                'left': False
+                'left': False,
+                'name': name
             }
         )
         self.times = [self.game.time * 60 for _ in self.clients]
 
-    def replace_client(self, client_conn, role, replaced_client):
+    def replace_client(self, client_conn, role, replaced_client, name):
         self.client_count += 1
+        self.times = [self.game.time * 60 for _ in self.clients]
         self.clients[replaced_client] = {
                 'conn': client_conn,
                 'role': role,
@@ -76,9 +79,9 @@ class Lobby:
                 'end_game': False,
                 'hand_points': self.clients[replaced_client]['hand_points'],
                 'tile_points': self.clients[replaced_client]['tile_points'],
-                'left': False
+                'left': False,
+                'name': name
             }
-        self.times = [self.game.time * 60 for _ in self.clients]
 
     def remove_client(self, client):
         self.client_count -= 1
@@ -89,3 +92,13 @@ class Lobby:
             self.times[client] = self.game.time
         except IndexError:
             server_q_put('Client at:', client, 'is already deleted!')
+
+    def ban_client(self, client):
+        self.client_count -= 1
+        try:
+            temp_conn = self.clients[client]['conn']
+            del self.clients[client]
+            server_q_put('Banned client:', client)
+            return temp_conn
+        except IndexError:
+            server_q_put('Client at:', client, 'is already banned!')

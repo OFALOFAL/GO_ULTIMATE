@@ -30,6 +30,8 @@ class Window:
         self.BLUE = (0, 0, 255)
         self.GOLD = (212, 175, 55)
         self.REDDISH = (255, 61, 13)
+        self.COLOR_ACTIVE = pygame.Color('lightskyblue3')
+        self.COLOR_PASSIVE = pygame.Color('bisque3')
 
         self.board_margin_left = 250
         self.board_margin_top = 44
@@ -48,7 +50,7 @@ class Window:
         self.exit_btn = pygame.Rect(self.exit_btn_pos, (70, 35))
 
         self.game_mode_text = self.FONT_2.render('S A N D B O X', True, self.GOLD)
-        self.game_mode_btn = pygame.Rect((self.right_site_center - 150, self.HEIGHT / 5), (300, 50))    # TODO: make the button to be able to change mode
+        self.game_mode_btn = pygame.Rect((self.right_site_center - 150, self.HEIGHT / 5), (300, 50))
         self.game_modes_bg = pygame.Rect((self.right_site_center - 150, self.HEIGHT / 5 + self.game_mode_btn.height), (300, 400))
 
         self.CURRENTLY_PLACING_TEXT = self.SMALL_FONT.render('CURRENTLY PLACING:', True, self.BLACK)
@@ -146,7 +148,16 @@ class Window:
         self.BLACK_FLAG = pygame.transform.scale(pygame.image.load(os.path.join('Assets', 'black_flag.png')), (30, 30))
         self.FLAG_BG = pygame.Rect((self.game_modes_bg.x + self.game_modes_bg.width - 40, 195), (30, 30))
 
-    def draw(self, server_status, run_status, times, turn, clients_info, game_summary):
+        self.name_font = pygame.font.Font(None, 32)
+        self.user_text = ''
+
+        self.NAME_TEXT = self.DEF_FONT.render('NAME:', True, self.BLACK)
+        self.input_rect = pygame.Rect((self.right_site_center - 35, 50), (140, 32))
+        self.input_color = self.COLOR_PASSIVE
+
+        self.active = False
+
+    def draw(self, server_status, times, turn, clients_info, host):
         self.WIN.blit(self.BG_IMG, (0, 0))
         self.WIN.blit(self.right_border_s, self.right_border)
 
@@ -268,8 +279,8 @@ class Window:
             for x, client in enumerate(clients_info):
                 color = pygame.Rect((self.right_site_center - 135, self.game_modes_bg.y + 1 + top_margin + (beetwen_space * x)), (20, 20))
                 pygame.draw.rect(self.WIN, self.colors[client['turn']], color)
-                name = self.SMALL_FONT.render('Client: '+str(client['id']), True, self.BLACK)    # TODO: change it to use name when added max name len 9
-                self.WIN.blit(name, (self.right_site_center - 140 + name.get_width()/2, self.game_modes_bg.y + top_margin + (beetwen_space * x)))
+                name = self.SMALL_FONT.render(client['name'], True, self.BLACK)
+                self.WIN.blit(name, (self.right_site_center - 60 - name.get_width()/2, self.game_modes_bg.y + top_margin + (beetwen_space * x)))
                 role = self.SMALL_FONT.render(client['role'], True, self.BLACK)
                 self.WIN.blit(role, (self.right_site_center + 30 - role.get_width()/2, self.game_modes_bg.y + top_margin + (beetwen_space * x)))
                 if client['end_game']:
@@ -397,10 +408,9 @@ class Window:
                 if not x == 0:
                     pygame.draw.rect(self.WIN, self.BLACK, pygame.Rect((self.game_summary_bg.x + 10, self.game_summary_bg.y + top_margin + 30 * (x + 1)), (480, 1)))
 
-                # TODO: change it to use name when added max name len 9
                 number_text = self.SMALL_FONT.render(str(places[-1])+')', True, self.BLACK)
                 self.WIN.blit(number_text, (self.game_summary_bg.x + 50, self.game_summary_bg.y + top_margin + 30 * (x + 1) + 5))
-                points_text = self.SMALL_FONT.render('Client: '+str(client[1])+'          Points:'+str(client[0]), True, self.BLACK)
+                points_text = self.SMALL_FONT.render(client['name']+'          Points:'+str(client[0]), True, self.BLACK)
                 self.WIN.blit(points_text, (self.WIDTH/2, self.game_summary_bg.y + top_margin + 30 * (x + 1) + 5))
                 pygame.draw.rect(self.WIN, self.colors[client[1]], pygame.Rect((self.game_summary_bg.x + 20, self.game_summary_bg.y + top_margin + 30 * (x + 1) + 5), (20, 20)))
 
@@ -410,6 +420,12 @@ class Window:
                 self.WIN.blit(self.WHITE_FLAG, (self.game_modes_bg.x + self.game_modes_bg.width - 40, 195))
             else:
                 self.WIN.blit(self.BLACK_FLAG, (self.game_modes_bg.x + self.game_modes_bg.width - 40, 195))
+
+        pygame.draw.rect(self.WIN, self.input_color, self.input_rect)
+        text_surface = self.name_font.render(self.user_text, True, (255, 255, 255))
+        self.WIN.blit(text_surface, (self.input_rect.x + 5, self.input_rect.y + 5))
+        self.input_rect.w = max(140, text_surface.get_width() + 10)
+        self.WIN.blit(self.NAME_TEXT, (self.right_site_center - 140, 51))
 
         pygame.display.update()
 
@@ -426,12 +442,15 @@ class Window:
             else:
                 return 3
 
-    def run(self, run, server_status, game_type, turn, move, board, times, game_summary, clients_info):
-        self.draw(server_status, self.run_status, times, turn, clients_info, game_summary)
+    def run(self, run, server_status, game_type, turn, host, move, board, times, game_summary, clients_info):
+        self.draw(server_status, times, turn, clients_info, host)
         if game_summary:
             self.run_status['game_summary'] = True
 
         for ev in pygame.event.get():
+            if ev.type == pygame.QUIT:
+                return 'exit', run
+
             if ev.type == pygame.MOUSEWHEEL:
                 if self.game.game_type == game_type == 'SANDBOX':
                     if ev.y > 1:
@@ -445,11 +464,20 @@ class Window:
                     else:
                         self.currently_placing += ev.y
 
-            if ev.type == pygame.QUIT:
-                run = False
+            if ev.type == pygame.KEYDOWN and self.active:
+                if ev.key == pygame.K_BACKSPACE:
+                    self.user_text = self.user_text[:-1]
+                elif len(self.user_text) <= 9:
+                    self.user_text += ev.unicode
             
             mouse = pygame.Rect(pygame.mouse.get_pos(), (1, 1))
             if pygame.mouse.get_pressed()[0] and not self.clicked:
+                if self.input_rect.contains(mouse):
+                    self.active = True
+                    self.input_color = self.COLOR_ACTIVE
+                else:
+                    self.active = False
+                    self.input_color = self.COLOR_PASSIVE
                 if self.run_status['game_summary']:
                     if self.game_summary_exit_btn.contains(mouse):
                         self.run_status['game_summary'] = False
@@ -510,7 +538,7 @@ class Window:
                     elif self.run_status['connected']:
                         return 'disconnect', [self.game.game_type, False, False]
                     else:
-                        return 'connect', [self.game.game_type, self.game.players_limit, self.choosen_board_size]
+                        return 'connect', [self.game.game_type, self.game.players_limit, self.choosen_board_size, self.user_text]
                 if self.exit_btn.contains(mouse):
                     self.clicked = True
                     self.run_status['exit_clicked_clicked'] = True
@@ -570,6 +598,6 @@ class Window:
             self.run_status['connected'] = False
 
         if server_status == 'END_GAME_REQ':
-            pass    # TODO: change to ask player if he wants to end the game
+            pass
 
         return 'run', [run, self.game.game_type]

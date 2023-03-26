@@ -1,3 +1,5 @@
+import sys
+
 from response import Response
 from network import Network
 import pickle
@@ -17,12 +19,12 @@ def send_move(n: Network, game_type, move, turn, addr):
     return msg
     # return n.send(pickle.dumps(response))
 
-def create(n: Network, game_type, addr, players_limit = 2, tiles_ammount = 18):
+def create(n: Network, game_type, addr, players_limit = 2, tiles_ammount = 18, name=''):
     n.client.connect(n.addr)
-    response = Response(game_type, create_req=True, addr=addr, password=password, players_limit=players_limit, tiles_amount=tiles_ammount)
+    response = Response(game_type, create_req=True, addr=addr, password=password, players_limit=players_limit, tiles_amount=tiles_ammount, client_name=name)
     return n.send(pickle.dumps(response))
 
-def connect(n: Network, game_type, addr, players_limit = 2, tiles_amount = 18):
+def connect(n: Network, game_type, addr, players_limit = 2, tiles_amount = 18, name=''):
     print(game_type, addr, players_limit, tiles_amount)
     try:
         n.client.connect(n.addr)
@@ -32,7 +34,7 @@ def connect(n: Network, game_type, addr, players_limit = 2, tiles_amount = 18):
         return False
     except OSError:
         return False
-    response = Response(game_type, connect_req=True, addr=addr, password=password, players_limit=players_limit, tiles_amount=tiles_amount)
+    response = Response(game_type, connect_req=True, addr=addr, password=password, players_limit=players_limit, tiles_amount=tiles_amount, client_name=name)
     return n.send(pickle.dumps(response))
 
 def dissconnect(n: Network):
@@ -52,7 +54,7 @@ def ban_clients(n: Network, clients):
     return pickle.loads(n.send(pickle.dumps(Response(host=True, ban_clients=clients))))
 
 def send_end_game_req(n: Network):
-    return n.send(pickle.dumps(Response(end_game_req=True)))
+    n.send(pickle.dumps(Response(end_game_req=True)))
 
 window = Window()
 
@@ -71,8 +73,9 @@ if __name__ == '__main__':
     times = [False, []]
     host = False
     clients_info = []
+    name = ''
 
-    def connect_thread(players_limit, tiles_amount):
+    def connect_thread(players_limit, tiles_amount, name):
         # Using globals becouse thread can't return values
         global server_status
         global turn
@@ -83,7 +86,7 @@ if __name__ == '__main__':
         global network
         clients_info = []
 
-        if not connect(network, game_type, IP_ADDR, players_limit, tiles_amount):
+        if not connect(network, game_type, IP_ADDR, players_limit, tiles_amount, name):
             print('Server Closed')
             server_status = 'CLOSED'
         else:
@@ -130,7 +133,7 @@ if __name__ == '__main__':
         global clients_info
         clients_info = []
 
-        if not connect(network, game_type, IP_ADDR, players_limit, tiles_amount):
+        if not connect(network, game_type, IP_ADDR, players_limit, tiles_amount, name):
             print('Server Closed')
             server_status = 'CLOSED'
         else:
@@ -184,14 +187,8 @@ if __name__ == '__main__':
                 connected = False
             except EOFError:
                 connected = False
-            if response.end_game_req:
-                server_status = 'END_GAME_REQ'
-            elif response.type['server']['server']:
-                if response.type['server']['host_exit_request']:
-                    connected = False
-                    network = dissconnect(network)
-                    server_status = 'GAME_END'  # TODO: send summary of the game
-                elif response.type['server']['change_move_request']:
+            if response.type['server']['server']:
+                if response.type['server']['change_move_request']:
                     move = 'CHANGE_MOVE'
                 elif response.type['server']['game_summary']:
                     board = [False, []]
@@ -227,9 +224,7 @@ if __name__ == '__main__':
                 connected = False
             except EOFError:
                 connected = False
-            if response.end_game_req:
-                server_status = 'END_GAME_REQ'
-            elif response.type['server']['server']:
+            if response.type['server']['server']:
                 if response.type['server']['game_summary']:
                     board = [False, []]
                     game_summary = True
@@ -244,7 +239,7 @@ if __name__ == '__main__':
 
 
     while run:
-        window_info, value = window.run(run, server_status, game_type, turn, move, board, times, game_summary, clients_info)
+        window_info, value = window.run(run, server_status, game_type, turn, host, move, board, times, game_summary, clients_info)
         if connected:
             if window_info == 'move':
                 start_new_thread(_send_move, ())
@@ -267,13 +262,13 @@ if __name__ == '__main__':
             run = value
         elif window_info == 'connect':
             game_summary = False
-            game_type, players_limit, tiles_amount = value
-            start_new_thread(connect_thread, (players_limit, tiles_amount))
+            game_type, players_limit, tiles_amount, name = value
+            start_new_thread(connect_thread, (players_limit, tiles_amount, name))
         elif window_info == 'create':
             game_summary = False
             game_type, players_limit, tiles_amount = value
-            start_new_thread(create_thread, (players_limit, tiles_amount))
-        elif window_info == 'disconnect':
+            start_new_thread(create_thread, (players_limit, tiles_amount, name))
+        elif window_info == 'disconnected':
             network = dissconnect(network)
             board[0] = False
             times = [False, []]
@@ -281,7 +276,9 @@ if __name__ == '__main__':
             server_status = 'DISCONNECTED'
             connected = False
         elif window_info == 'END_GAME':
-            send_end_game_req(network)
+            start_new_thread(send_end_game_req, (network, ))
+        elif window_info == 'BAN':
+            start_new_thread(ban_clients, (network, [value]))
         elif window_info == 'move':
             if game_type == 'SANDBOX':
                 move = ['MOVE', value]
@@ -289,5 +286,5 @@ if __name__ == '__main__':
             if game_type == 'SANDBOX':
                 move = ['DEL', value]
         elif window_info == 'exit':
-            break
+            sys.exit()
         run = value
