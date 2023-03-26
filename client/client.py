@@ -280,7 +280,7 @@ if __name__ == '__main__':
             clients_info = []
             server_status = 'DISCONNECTED'
             connected = False
-        elif window_info == 'end_game_req':
+        elif window_info == 'END_GAME':
             send_end_game_req(network)
         elif window_info == 'move':
             if game_type == 'SANDBOX':

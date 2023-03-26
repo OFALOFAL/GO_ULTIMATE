@@ -172,6 +172,9 @@ def threaded_client(conn, addr):
                             server_q_put('Closing lobby:', lobby.id)
                             conn.send(pickle.dumps(Response(board=lobby.game.tiles, game_summary=True, times=lobby.times, clients_info=lobby.send_clients_info())))
 
+                if lobby.client_count == 1 and not host:
+                    break
+
                 temp = []
                 for client in lobby.clients:
                     temp.append(client['end_game'])
@@ -205,7 +208,7 @@ def threaded_client(conn, addr):
             break
 
     server_q_put("Lost connection with client:", user_info.type['client']['client_addr'], lobby.clients[client_id-1]['role'])
-    lobby.remove_client(lobby.active_turn)
+    lobby.remove_client(client_id)
     if lobby.client_count == 1:  # if only 1 is playing
         for client in lobby.clients:
             if not client['left']:

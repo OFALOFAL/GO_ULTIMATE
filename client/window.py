@@ -142,6 +142,10 @@ class Window:
                                                  (150, 70))
         self.game_summary_exit_text = self.SMALL_FONT.render('EXIT', True, self.BLACK)
 
+        self.WHITE_FLAG = pygame.transform.scale(pygame.image.load(os.path.join('Assets', 'white_flag.png')), (30, 30))
+        self.BLACK_FLAG = pygame.transform.scale(pygame.image.load(os.path.join('Assets', 'black_flag.png')), (30, 30))
+        self.FLAG_BG = pygame.Rect((self.game_modes_bg.x + self.game_modes_bg.width - 40, 195), (30, 30))
+
     def draw(self, server_status, run_status, times, turn, clients_info, game_summary):
         self.WIN.blit(self.BG_IMG, (0, 0))
         self.WIN.blit(self.right_border_s, self.right_border)
@@ -378,11 +382,13 @@ class Window:
             end_game_text = self.FONT_2.render('GAME ENDED', True, self.BLACK)
             self.WIN.blit(end_game_text, (self.game_summary_bg.x + self.game_summary_bg.width/2 - end_game_text.get_width()/2,
                                           self.game_summary_bg.y + end_game_text.get_height() + 5))
+            places = []
             for x, client in enumerate(sorted_clients_info):
-                place = str(x+1)
+                places.append(x+1)
+                if x > 0 and client[0] == sorted_clients_info[x-1][0]:
+                    places[-1] = places[-2]
                 if x == 0 or client[0] == sorted_clients_info[0][0]:
                     pygame.draw.rect(self.WIN, self.GOLD, pygame.Rect((self.game_summary_bg.x + 10, self.game_summary_bg.y + top_margin + 30 * (x + 1)),(480, 30)))
-                    place = '1'
                 elif x % 2 == 0:
                     pygame.draw.rect(self.WIN, self.LIGHT_GREY, pygame.Rect((self.game_summary_bg.x + 10, self.game_summary_bg.y + top_margin + 30 * (x + 1)),(480, 30)))
                 else:
@@ -392,12 +398,18 @@ class Window:
                     pygame.draw.rect(self.WIN, self.BLACK, pygame.Rect((self.game_summary_bg.x + 10, self.game_summary_bg.y + top_margin + 30 * (x + 1)), (480, 1)))
 
                 # TODO: change it to use name when added max name len 9
-
-                number_text = self.SMALL_FONT.render(place+')', True, self.BLACK)
+                number_text = self.SMALL_FONT.render(str(places[-1])+')', True, self.BLACK)
                 self.WIN.blit(number_text, (self.game_summary_bg.x + 50, self.game_summary_bg.y + top_margin + 30 * (x + 1) + 5))
                 points_text = self.SMALL_FONT.render('Client: '+str(client[1])+'          Points:'+str(client[0]), True, self.BLACK)
                 self.WIN.blit(points_text, (self.WIDTH/2, self.game_summary_bg.y + top_margin + 30 * (x + 1) + 5))
                 pygame.draw.rect(self.WIN, self.colors[client[1]], pygame.Rect((self.game_summary_bg.x + 20, self.game_summary_bg.y + top_margin + 30 * (x + 1) + 5), (20, 20)))
+
+        if self.run_status['connected'] and len(clients_info) >= turn+1:
+            pygame.draw.rect(self.WIN, self.GREY, self.FLAG_BG)
+            if clients_info[turn]['end_game']:
+                self.WIN.blit(self.WHITE_FLAG, (self.game_modes_bg.x + self.game_modes_bg.width - 40, 195))
+            else:
+                self.WIN.blit(self.BLACK_FLAG, (self.game_modes_bg.x + self.game_modes_bg.width - 40, 195))
 
         pygame.display.update()
 
@@ -442,6 +454,8 @@ class Window:
                     if self.game_summary_exit_btn.contains(mouse):
                         self.run_status['game_summary'] = False
                         return 'end_game_summary', run
+                if self.FLAG_BG.contains(mouse):
+                    return 'END_GAME', run
                 for game_type_manage in ((_[1], self.game_modes[x]) for x, _ in enumerate(self.game_modes_buttons[1:])):
                     if game_type_manage[0].contains(mouse):
                         if self.game.game_type == 'SANDBOX' and not game_type_manage[1] == 'SANDBOX':
@@ -475,7 +489,7 @@ class Window:
                 if self.game.game_type in ['GO', 'GO | 5', 'GO | 10', 'GO | 30']:
                     sizes = [8, 18]
                     for x, tab in enumerate(self.board_size_tabs):
-                        if tab.contains(mouse):
+                        if tab.contains(mouse) and not self.run_status['connected']:
                             self.clicked = True
                             self.choosen_board_bar.x = tab.x - 2
                             self.choosen_board_size = sizes[x]
