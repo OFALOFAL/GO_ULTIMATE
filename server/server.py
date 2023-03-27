@@ -124,11 +124,8 @@ def threaded_client(conn, addr):
                     lobby.last_move_time = time.time()
                     conn.send(pickle.dumps(Response(server_update=True, clients_info=lobby.send_clients_info())))
                     server_q_put('Lobby', lobby.id, 'is ready; started by:', data.type['client']['client_addr'])
-                if data.type['client']['end_game_req']:
-                    lobby.clients[client_id]['end_game'] = not lobby.clients[client_id]['end_game']
-                    response = Response(board=lobby.game.tiles, active_turn=lobby.active_turn, times=lobby.times, server_update=True, clients_info=lobby.send_clients_info())
-                    conn.send(pickle.dumps(response))
-                elif lobby.ready and data.type['client']['move_req']:
+
+                if lobby.ready and data.type['client']['move_req']:
                     if data.turn == lobby.active_turn:
                         if lobby.game.add_move([data.turn, data.move]):
                             update_time = False # this decides if time is updated, time doesn't have to be updated in sending move as the update board is sended constantly anyway
@@ -164,6 +161,7 @@ def threaded_client(conn, addr):
                     else:
                         server_q_put('turn:', lobby.active_turn, 'got:', data.turn)
                 elif lobby.ready and data.type['client']['game_update_req']:
+                    lobby.clients[client_id]['end_game'] = data.type['client']['end_game_req']
                     lobby.update_time(lobby.active_turn, time.time())
                     response = Response(board=lobby.game.tiles, active_turn=lobby.active_turn, times=lobby.times, server_update=True, clients_info=lobby.send_clients_info())
                     conn.send(pickle.dumps(response))

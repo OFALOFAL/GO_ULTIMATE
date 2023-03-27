@@ -494,7 +494,11 @@ class Window:
                         self.run_status['game_summary'] = False
                         return 'end_game_summary', run
                 if self.FLAG_BG.contains(mouse):
-                    return 'END_GAME', run
+                    try:
+                        if len(clients_info) > 1:
+                            return 'END_GAME', run
+                    except:
+                        pass
                 for game_type_manage in ((_[1], self.game_modes[x]) for x, _ in enumerate(self.game_modes_buttons[1:])):
                     if game_type_manage[0].contains(mouse):
                         if self.game.game_type == 'SANDBOX' and not game_type_manage[1] == 'SANDBOX':

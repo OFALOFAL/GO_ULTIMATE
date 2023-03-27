@@ -6,7 +6,7 @@ class Network:
         self.server = '172.104.241.208'
         self.port = 5555
         self.addr = (self.server, self.port)
-        self.PICKLE_SIZE = 1024 * 16
+        self.PICKLE_SIZE = 1024 * 32
 
     def get(self):
         return self.client.recv(self.PICKLE_SIZE)

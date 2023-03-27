@@ -9,8 +9,8 @@ from _thread import start_new_thread
 
 password = 'qqwkkjhasfa198998j923r9u9823n89n9uw8nf923n9rfn9jnav038rn'
 
-def update_board(n: Network, game_type, addr):
-    response = Response(game_type, addr=addr, client_is_ready=True, game_update_req=True)
+def update_board(n: Network, game_type, addr, end_game):
+    response = Response(game_type, addr=addr, client_is_ready=True, game_update_req=True, end_game_req=end_game)
     return n.send(pickle.dumps(response))
 
 def send_move(n: Network, game_type, move, turn, addr):
@@ -53,9 +53,6 @@ def wait_for_clients(n: Network):
 def ban_clients(n: Network, clients):
     return pickle.loads(n.send(pickle.dumps(Response(host=True, ban_clients=clients))))
 
-def send_end_game_req(n: Network):
-    n.send(pickle.dumps(Response(end_game_req=True)))
-
 window = Window()
 
 if __name__ == '__main__':
@@ -74,6 +71,7 @@ if __name__ == '__main__':
     host = False
     clients_info = []
     name = ''
+    end_game = False
 
     def connect_thread(players_limit, tiles_amount, name):
         # Using globals becouse thread can't return values
@@ -202,7 +200,7 @@ if __name__ == '__main__':
                     else:
                         times = [False]
 
-    def _update_board():
+    def _update_board(end_game):
         # Using globals becouse thread can't return values
         global connected
         global server_status
@@ -212,12 +210,15 @@ if __name__ == '__main__':
         global clients_info
         global network
 
-        response = update_board(network, game_type, IP_ADDR)
+        response = update_board(network, game_type, IP_ADDR, end_game)
         if response is None:
             server_status = 'DISCONNECTED'
         else:
             try:
-                response = pickle.loads(response)
+                try:
+                    response = pickle.loads(response)
+                except:
+                    print(response)
             except TypeError:
                 connected = False
             except KeyboardInterrupt:
@@ -244,7 +245,7 @@ if __name__ == '__main__':
             if window_info == 'move':
                 start_new_thread(_send_move, ())
             else:
-                start_new_thread(_update_board, ())
+                start_new_thread(_update_board, (end_game, ))
         else:
             board = [False, []]
             times = [False, []]
@@ -254,6 +255,7 @@ if __name__ == '__main__':
         elif window_info == 'end_game_summary':
             game_summary = False
             network = dissconnect(network)
+            end_game = False
             board[0] = False
             times = [False, []]
             clients_info = []
@@ -261,6 +263,7 @@ if __name__ == '__main__':
             connected = False
             run = value
         elif window_info == 'connect':
+            end_game = False
             game_summary = False
             game_type, players_limit, tiles_amount, name = value
             start_new_thread(connect_thread, (players_limit, tiles_amount, name))
@@ -270,13 +273,14 @@ if __name__ == '__main__':
             start_new_thread(create_thread, (players_limit, tiles_amount, name))
         elif window_info == 'disconnect':
             network = dissconnect(network)
+            end_game = False
             board[0] = False
             times = [False, []]
             clients_info = []
             server_status = 'DISCONNECTED'
             connected = False
         elif window_info == 'END_GAME':
-            start_new_thread(send_end_game_req, (network, ))
+            end_game = not end_game
         elif window_info == 'BAN':
             start_new_thread(ban_clients, (network, [value]))
         elif window_info == 'move':
