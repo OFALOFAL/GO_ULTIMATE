@@ -10,7 +10,7 @@ import pickle
 from server_message_queue import server_q_put, get_q_size
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server = '192.168.56.1'
+server = '172.104.241.208'
 port = 5555
 server_ip = socket.gethostbyname(server)
 

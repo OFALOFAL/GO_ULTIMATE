@@ -424,10 +424,13 @@ class Window:
 
         if self.run_status['connected'] and len(clients_info) >= turn+1:
             pygame.draw.rect(self.WIN, self.GREY, self.FLAG_BG)
-            if clients_info[turn]['end_game']:
+            try:
+                if clients_info[turn]['end_game']:
+                    self.WIN.blit(self.WHITE_FLAG, (self.game_modes_bg.x + self.game_modes_bg.width - 40, 195))
+                else:
+                    self.WIN.blit(self.BLACK_FLAG, (self.game_modes_bg.x + self.game_modes_bg.width - 40, 195))
+            except IndexError:
                 self.WIN.blit(self.WHITE_FLAG, (self.game_modes_bg.x + self.game_modes_bg.width - 40, 195))
-            else:
-                self.WIN.blit(self.BLACK_FLAG, (self.game_modes_bg.x + self.game_modes_bg.width - 40, 195))
 
         pygame.draw.rect(self.WIN, self.input_color, self.input_rect)
         text_surface = self.name_font.render(self.user_text, True, (255, 255, 255))
