@@ -501,7 +501,9 @@ class Window:
                         pass
                 for game_type_manage in ((_[1], self.game_modes[x]) for x, _ in enumerate(self.game_modes_buttons[1:])):
                     if game_type_manage[0].contains(mouse):
-                        if self.game.game_type == 'SANDBOX' and not game_type_manage[1] == 'SANDBOX':
+                        if self.game.game_type == 'GO NATIONS' or game_type_manage[1] == 'GO NATIONS':
+                            pass
+                        elif self.game.game_type == 'SANDBOX' and not game_type_manage[1] == 'SANDBOX':
                             if self.game.tiles_ammount == 24:
                                 self.choosen_board_size = 18
                                 self.choosen_board_bar.x -= 57.5
@@ -521,6 +523,7 @@ class Window:
                         else:
                             self.run_status['show_bar'] = False
                             self.game = Game(game_type_manage[1], tiles_ammount=self.choosen_board_size)
+                        self.game_mode_text = self.FONT_2.render(self.game.game_type, True, self.GOLD)
                 if self.run_status['show_bar']:
                     for x, tab in enumerate(self.player_limit_tabs):
                         if tab.contains(mouse) and not self.run_status['connected']:
