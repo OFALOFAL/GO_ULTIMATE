@@ -29,7 +29,7 @@ connected = set()
 lobbies = []
 
 running = True
-password = 'MKAMksj#4525kjmois563&*sf'
+password = 'qqwkkjhasfa198998j923r9u9823n89n9uw8nf923n9rfn9jnav038rn'
 
 def threaded_client(conn, addr):
     global lobbies

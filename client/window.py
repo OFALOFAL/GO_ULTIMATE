@@ -7,6 +7,10 @@ class Window:
     def __init__(self):
         pygame.init()
         pygame.font.init()
+        pygame.display.set_caption('Go Ultimate')
+        self.Icon = pygame.transform.scale(pygame.image.load(os.path.join('Assets', 'icon.png')), (32, 32))
+        pygame.display.set_icon(self.Icon)
+
         self.game = Game('SANDBOX')
         self.DEF_FONT = pygame.font.SysFont('Corbel', 35)
         self.SMALL_FONT = pygame.font.SysFont('Corbel', 24)
@@ -353,9 +357,11 @@ class Window:
             pygame.draw.rect(self.WIN, self.DARK_RED, self.exit_btn)
         self.WIN.blit(self.EXIT_TEXT, (self.exit_btn_pos[0] + self.exit_btn.width/2 - self.EXIT_TEXT.get_width()/2,
                                        self.exit_btn_pos[1] + self.exit_btn.height/2 - self.EXIT_TEXT.get_height()/2 + 3))
-        self.WIN.blit(self.CURRENTLY_PLACING_TEXT, (self.right_site_center - self.CURRENTLY_PLACING_TEXT.get_width()/2 - 30, self.HEIGHT / 5 - 60))
-        pygame.draw.rect(self.WIN, self.GREY, self.CURRENTLY_PLACING_COLOR_BG)
-        pygame.draw.rect(self.WIN, self.colors[self.currently_placing], self.currently_placing_color)
+
+        if self.game.game_type == 'SANDBOX':
+            self.WIN.blit(self.CURRENTLY_PLACING_TEXT, (self.right_site_center - self.CURRENTLY_PLACING_TEXT.get_width()/2 - 30, self.HEIGHT / 5 - 60))
+            pygame.draw.rect(self.WIN, self.GREY, self.CURRENTLY_PLACING_COLOR_BG)
+            pygame.draw.rect(self.WIN, self.colors[self.currently_placing], self.currently_placing_color)
 
         for i in range(self.game.tiles_ammount):
             for j in range(self.game.tiles_ammount):
