@@ -268,7 +268,7 @@ if __name__ == '__main__':
             game_summary = False
             game_type, players_limit, tiles_amount = value
             start_new_thread(create_thread, (players_limit, tiles_amount, name))
-        elif window_info == 'disconnected':
+        elif window_info == 'disconnect':
             network = dissconnect(network)
             board[0] = False
             times = [False, []]

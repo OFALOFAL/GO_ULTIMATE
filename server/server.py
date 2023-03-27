@@ -32,6 +32,7 @@ running = True
 password = 'MKAMksj#4525kjmois563&*sf'
 
 def threaded_client(conn, addr):
+    global lobbies
     try:
         conn.send(pickle.dumps(Response(validate_req=True, addr=addr)))
     except ConnectionResetError:
@@ -171,16 +172,18 @@ def threaded_client(conn, addr):
                     for t in lobby.times:
                         print(lobby.times)
                         if t <= 1:
-                            server_q_put('Closing lobby:', lobby.id)
+                            server_q_put('Ending lobby:', lobby.id)
                             conn.send(pickle.dumps(Response(board=lobby.game.tiles, game_summary=True, times=lobby.times, clients_info=lobby.send_clients_info())))
+                            break
 
                 temp = []
                 for client in lobby.clients:
                     temp.append(client['end_game'])
                 end_game = all(temp)
                 if end_game:
-                    server_q_put('Closing lobby:', lobby.id)
+                    server_q_put('Ending lobby:', lobby.id)
                     conn.send(pickle.dumps(Response(board=lobby.game.tiles, game_summary=True, times=lobby.times, clients_info=lobby.send_clients_info())))
+                    break
 
             else:
                 server_q_put('Invalid response from:', addr)
@@ -208,11 +211,15 @@ def threaded_client(conn, addr):
 
     server_q_put("Lost connection with client:", user_info.type['client']['client_addr'], lobby.clients[client_id-1]['role'])
     lobby.remove_client(client_id)
-    if lobby.client_count == 1:  # if only 1 is playing
+    if lobby.client_count <= 1:  # if only 1 is playing
+        try:
+            lobbies.remove(lobby)
+        except ValueError:
+            pass
+        server_q_put('Closing lobby:', lobby.id)
         for client in lobby.clients:
             if not client['left']:
                 client['conn'].send(pickle.dumps(Response(board=lobby.game.tiles, game_summary=True, times=lobby.times, clients_info=lobby.send_clients_info())))
-        lobbies.remove(lobby)
     conn.close()
 
 def handle_clients():

@@ -380,12 +380,12 @@ class Window:
             self.WIN.blit(self.game_summary_exit_text, (self.game_summary_exit_btn.x + self.game_summary_exit_btn.width/2 - self.game_summary_exit_text.get_width()/2,
                                                         self.game_summary_exit_btn.y + self.game_summary_exit_btn.height/2 - self.game_summary_exit_text.get_height()/2))
 
-            sorted_clients_info = [[client['tile_points']+client['hand_points'], client['turn']] for client in clients_info]
+            sorted_clients_info = [[client['tile_points']+client['hand_points'], client['turn'], client['name']] for client in clients_info]
             n = len(sorted_clients_info)
             for i in range(n):
                 swapped = False
                 for j in range(0, n - i - 1):
-                    if sorted_clients_info[j][0] > sorted_clients_info[j + 1][0]:
+                    if sorted_clients_info[j][0] < sorted_clients_info[j + 1][0]:
                         sorted_clients_info[j], sorted_clients_info[j + 1] = sorted_clients_info[j + 1], sorted_clients_info[j]
                 if not swapped:
                     break
@@ -410,8 +410,10 @@ class Window:
 
                 number_text = self.SMALL_FONT.render(str(places[-1])+')', True, self.BLACK)
                 self.WIN.blit(number_text, (self.game_summary_bg.x + 50, self.game_summary_bg.y + top_margin + 30 * (x + 1) + 5))
-                points_text = self.SMALL_FONT.render(client['name']+'          Points:'+str(client[0]), True, self.BLACK)
-                self.WIN.blit(points_text, (self.WIDTH/2, self.game_summary_bg.y + top_margin + 30 * (x + 1) + 5))
+                name_text = self.SMALL_FONT.render(client[2], True, self.BLACK)
+                self.WIN.blit(name_text, (self.WIDTH / 2 + 20 - name_text.get_width()/2, self.game_summary_bg.y + top_margin + 30 * (x + 1) + 5))
+                points_text = self.SMALL_FONT.render('Points:'+str(client[0]), True, self.BLACK)
+                self.WIN.blit(points_text, (self.WIDTH/2  + 180 - points_text.get_width()/2, self.game_summary_bg.y + top_margin + 30 * (x + 1) + 5))
                 pygame.draw.rect(self.WIN, self.colors[client[1]], pygame.Rect((self.game_summary_bg.x + 20, self.game_summary_bg.y + top_margin + 30 * (x + 1) + 5), (20, 20)))
 
         if self.run_status['connected'] and len(clients_info) >= turn+1:

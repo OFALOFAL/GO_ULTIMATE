@@ -88,6 +88,8 @@ class Lobby:
         try:
             self.clients[client]['left'] = True
             self.clients[client]['end_game'] = True
+            self.clients[client]['hand_points'] = 0
+            self.clients[client]['tile_points'] = 0
             server_q_put('Removed client:', client)
             self.times[client] = self.game.time
         except IndexError:
