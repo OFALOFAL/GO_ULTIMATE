@@ -121,7 +121,6 @@ if __name__ == '__main__':
                 network = dissconnect(network)
 
     def create_thread(players_limit, tiles_amount):
-        # Using globals becouse thread can't return values
         global server_status
         global turn
         global window_info
