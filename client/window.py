@@ -160,6 +160,7 @@ class Window:
         self.input_color = self.COLOR_PASSIVE
 
         self.active = False
+        self.last_game_type = self.game.game_type
 
     def draw(self, server_status, times, turn, clients_info, host):
         self.WIN.blit(self.BG_IMG, (0, 0))
@@ -233,30 +234,31 @@ class Window:
                                      (self.clock[0][0].y * 2 + self.clock[0][0].height) / 2 - time.get_height() / 2))
                 self.WIN.blit(time, ((self.enemy_clock[0][0].x * 2 + self.enemy_clock[0][0].width) / 2 - time.get_width() / 2,
                                      (self.enemy_clock[0][0].y * 2 + self.enemy_clock[0][0].height) / 2 - time.get_height() / 2))
-            else:
+            elif self.game.game_type in ['GO | 5', 'GO | 10', 'GO | 30']:   # Double check becouse of errors...
                 minutes = times[1][turn] // 60
                 seconds = times[1][turn] - minutes * 60
-                if seconds:
-                    if seconds < 10:
-                        time_1 = self.FONT_2.render(str(int(minutes)) + ' : 0' + str(int(seconds)), True, self.BLACK)
+                if minutes >= 0 and seconds >= 0:   # Triple check
+                    if seconds:
+                        if seconds < 10:
+                            time_1 = self.FONT_2.render(str(int(minutes)) + ' : 0' + str(int(seconds)), True, self.BLACK)
+                        else:
+                            time_1 = self.FONT_2.render(str(int(minutes)) + ' : ' + str(int(seconds)), True, self.BLACK)
                     else:
-                        time_1 = self.FONT_2.render(str(int(minutes)) + ' : ' + str(int(seconds)), True, self.BLACK)
-                else:
-                    time_1 = self.FONT_2.render(str(int(minutes)) + ' : 00', True, self.BLACK)
-                if turn == 0:
-                    minutes = times[1][1] // 60
-                    seconds = times[1][1] - minutes * 60
-                else:
-                    minutes = times[1][0] // 60
-                    seconds = times[1][0] - minutes * 60
-                if seconds:
-                    time_2 = self.FONT_2.render(str(int(minutes)) + ' : ' + str(int(seconds)), True, self.BLACK)
-                else:
-                    time_2 = self.FONT_2.render(str(int(minutes)) + ' : 00', True, self.BLACK)
-                self.WIN.blit(time_1, ((self.clock[0][0].x * 2 + self.clock[0][0].width) / 2 - time_2.get_width() / 2,
-                                       (self.clock[0][0].y * 2 + self.clock[0][0].height) / 2 - time_2.get_height() / 2))
-                self.WIN.blit(time_2, ((self.enemy_clock[0][0].x * 2 + self.enemy_clock[0][0].width) / 2 - time_1.get_width() / 2,
-                                       (self.enemy_clock[0][0].y * 2 + self.enemy_clock[0][0].height) / 2 - time_1.get_height() / 2))
+                        time_1 = self.FONT_2.render(str(int(minutes)) + ' : 00', True, self.BLACK)
+                    if turn == 0:
+                        minutes = times[1][1] // 60
+                        seconds = times[1][1] - minutes * 60
+                    else:
+                        minutes = times[1][0] // 60
+                        seconds = times[1][0] - minutes * 60
+                    if seconds:
+                        time_2 = self.FONT_2.render(str(int(minutes)) + ' : ' + str(int(seconds)), True, self.BLACK)
+                    else:
+                        time_2 = self.FONT_2.render(str(int(minutes)) + ' : 00', True, self.BLACK)
+                    self.WIN.blit(time_1, ((self.clock[0][0].x * 2 + self.clock[0][0].width) / 2 - time_2.get_width() / 2,
+                                           (self.clock[0][0].y * 2 + self.clock[0][0].height) / 2 - time_2.get_height() / 2))
+                    self.WIN.blit(time_2, ((self.enemy_clock[0][0].x * 2 + self.enemy_clock[0][0].width) / 2 - time_1.get_width() / 2,
+                                           (self.enemy_clock[0][0].y * 2 + self.enemy_clock[0][0].height) / 2 - time_1.get_height() / 2))
 
 
         left_side_text = self.right_site_center - 65
@@ -386,6 +388,10 @@ class Window:
             self.WIN.blit(self.game_summary_exit_text, (self.game_summary_exit_btn.x + self.game_summary_exit_btn.width/2 - self.game_summary_exit_text.get_width()/2,
                                                         self.game_summary_exit_btn.y + self.game_summary_exit_btn.height/2 - self.game_summary_exit_text.get_height()/2))
 
+            for x, _ in enumerate(clients_info):
+                if times[x] <= 0:
+                    client['tile_points'] = 0
+                    client['hand_points'] = 0
             sorted_clients_info = [[client['tile_points']+client['hand_points'], client['turn'], client['name']] for client in clients_info]
             n = len(sorted_clients_info)
             for i in range(n):
@@ -500,22 +506,23 @@ class Window:
                     except:
                         pass
                 for game_type_manage in ((_[1], self.game_modes[x]) for x, _ in enumerate(self.game_modes_buttons[1:])):
+                    cbb_x_pos = [1431, 1473, 1531, 1573, 1631]
                     if game_type_manage[0].contains(mouse):
-                        if self.game.game_type == 'GO NATIONS' or game_type_manage[1] == 'GO NATIONS':
-                            pass
-                        elif self.game.game_type == 'SANDBOX' and not game_type_manage[1] == 'SANDBOX':
+                        if game_type_manage[1] == 'SANDBOX':
+                            if self.game.tiles_ammount == 24:
+                                self.choosen_board_bar.x = cbb_x_pos[4]
+                            elif self.game.tiles_ammount == 18:
+                                self.choosen_board_bar.x = cbb_x_pos[2]
+                            elif self.game.tiles_ammount == 8:
+                                self.choosen_board_bar.x = cbb_x_pos[0]
+                        elif not game_type_manage[1] == 'GO NATIONS':
                             if self.game.tiles_ammount == 24:
                                 self.choosen_board_size = 18
-                                self.choosen_board_bar.x -= 57.5
-                            elif self.game.tiles_ammount == 18:
-                                self.choosen_board_bar.x += 42.5
-                            elif self.game.tiles_ammount == 8:
-                                self.choosen_board_bar.x += 42.5
-                        elif not self.game.game_type == 'SANDBOX' and game_type_manage[1] == 'SANDBOX':
+                                self.choosen_board_bar.x = cbb_x_pos[3]     # I have no idea why i have to repeat that
                             if self.game.tiles_ammount == 18:
-                                self.choosen_board_bar.x -= 42
+                                self.choosen_board_bar.x = cbb_x_pos[3]     # (that)
                             elif self.game.tiles_ammount == 8:
-                                self.choosen_board_bar.x -= 42
+                                self.choosen_board_bar.x = cbb_x_pos[1]
                         self.clicked = True
                         if game_type_manage[1] == 'GO NATIONS':
                             self.run_status['show_bar'] = True
