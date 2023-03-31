@@ -184,20 +184,21 @@ if __name__ == '__main__':
                 connected = False
             except EOFError:
                 connected = False
-            if response.type['server']['server']:
-                if response.type['server']['change_move_request']:
-                    move = 'CHANGE_MOVE'
-                elif response.type['server']['game_summary']:
-                    board = [False, []]
-                    game_summary = True
-                    clients_info = response.type['server']['clients_info']
-                else:
-                    board = [True, response.board]
-                    clients_info = response.type['server']['clients_info']
-                    if len(response.type['server']['times']):
-                        times = [True, response.type['server']['times']]
+            else:
+                if response.type['server']['server']:
+                    if response.type['server']['change_move_request']:
+                        move = 'CHANGE_MOVE'
+                    elif response.type['server']['game_summary']:
+                        board = [False, []]
+                        game_summary = True
+                        clients_info = response.type['server']['clients_info']
                     else:
-                        times = [False]
+                        board = [True, response.board]
+                        clients_info = response.type['server']['clients_info']
+                        if len(response.type['server']['times']):
+                            times = [True, response.type['server']['times']]
+                        else:
+                            times = [False]
 
     def _update_board(end_game):
         # Using globals becouse thread can't return values
@@ -214,28 +215,26 @@ if __name__ == '__main__':
             server_status = 'DISCONNECTED'
         else:
             try:
-                try:
-                    response = pickle.loads(response)
-                except:
-                    print(response)
+                response = pickle.loads(response)
             except TypeError:
                 connected = False
             except KeyboardInterrupt:
                 connected = False
             except EOFError:
                 connected = False
-            if response.type['server']['server']:
-                if response.type['server']['game_summary']:
-                    board = [False, []]
-                    game_summary = True
-                    clients_info = response.type['server']['clients_info']
-                else:
-                    board = [True, response.board]
-                    clients_info = response.type['server']['clients_info']
-                    if len(response.type['server']['times']):
-                        times = [True, response.type['server']['times']]
+            else:
+                if response.type['server']['server']:
+                    if response.type['server']['game_summary']:
+                        board = [False, []]
+                        game_summary = True
+                        clients_info = response.type['server']['clients_info']
                     else:
-                        times = [False]
+                        board = [True, response.board]
+                        clients_info = response.type['server']['clients_info']
+                        if len(response.type['server']['times']):
+                            times = [True, response.type['server']['times']]
+                        else:
+                            times = [False]
 
 
     while run:

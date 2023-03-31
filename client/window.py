@@ -389,9 +389,12 @@ class Window:
                                                         self.game_summary_exit_btn.y + self.game_summary_exit_btn.height/2 - self.game_summary_exit_text.get_height()/2))
 
             for x, _ in enumerate(clients_info):
-                if times[x] <= 0:
-                    client['tile_points'] = 0
-                    client['hand_points'] = 0
+                try:
+                    if times[x] <= 0:
+                        client['tile_points'] = 0
+                        client['hand_points'] = 0
+                except:
+                    pass
             sorted_clients_info = [[client['tile_points']+client['hand_points'], client['turn'], client['name']] for client in clients_info]
             n = len(sorted_clients_info)
             for i in range(n):
