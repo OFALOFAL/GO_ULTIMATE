@@ -1,5 +1,4 @@
 import sys
-
 from response import Response
 from network import Network
 import pickle
@@ -7,7 +6,7 @@ import socket
 from window import Window
 from _thread import start_new_thread
 
-password = 'qqwkkjhasfa198998j923r9u9823n89n9uw8nf923n9rfn9jnav038rn'
+password = 'qqwkkjhasfa198998j923r9u9823n89n9uw8nf923n9rfn9jnav038rn' # Haha security
 
 def update_board(n: Network, game_type, addr, end_game):
     response = Response(game_type, addr=addr, client_is_ready=True, game_update_req=True, end_game_req=end_game)

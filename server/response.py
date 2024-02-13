@@ -2,7 +2,7 @@ class Response:
     def __init__(self,
                  # all:
                  game_type='', move=[], board=[], turn=0, addr='', is_ready=False, end_game_req=False, active_turn=False,
-                 # client distinct request:
+                 # window distinct request:
                  create_req=False, connect_req=False, start_game_req=False, lobby_wait=False, password='', client_is_ready=False, players_limit = 2,
                  tiles_amount = 18, game_update_req=False, move_req=False, client_name='',
                  # server distinct request:
@@ -17,8 +17,8 @@ class Response:
                   or host or wait_for_clients or game_update_req or move_req
         self.type = {
             'request': request,
-            'client': {
-                'client': create_req or connect_req or start_game_req or lobby_wait or client_is_ready or (end_game_req and not server_update) or game_update_req or move_req,
+            'window': {
+                'window': create_req or connect_req or start_game_req or lobby_wait or client_is_ready or (end_game_req and not server_update) or game_update_req or move_req,
                 'client_addr': addr,
                 'create_new_lobby_req': create_req,
                 'connect_to_lobby_req': connect_req,
@@ -56,13 +56,13 @@ class Response:
             self.type['server']['client_status'] = 'HOST'
         if self.type['server']['client_status'] != 'HOST':
             self.type['host'] = {'host': False}
-        if self.type['client']['client']:
+        if self.type['window']['window']:
             self.type['server'] = {'server': False}
         elif self.type['server']['server']:
-            self.type['client'] = {'client': False}
-        if not self.type['server']['server'] and not self.type['client']['client']:
+            self.type['window'] = {'window': False}
+        if not self.type['server']['server'] and not self.type['window']['window']:
             self.type['server'] = {'server': False}
-            self.type['client'] = {'client': False}
+            self.type['window'] = {'window': False}
 
         # validate the message
         self.valid = True

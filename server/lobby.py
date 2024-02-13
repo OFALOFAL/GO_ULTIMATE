@@ -90,7 +90,7 @@ class Lobby:
             self.clients[client]['end_game'] = True
             self.clients[client]['hand_points'] = 0
             self.clients[client]['tile_points'] = 0
-            server_q_put('Removed client:', client)
+            server_q_put('Removed window:', client)
             self.times[client] = self.game.time
         except IndexError:
             server_q_put('Client at:', client, 'is already deleted!')
@@ -100,7 +100,7 @@ class Lobby:
         try:
             temp_conn = self.clients[client]['conn']
             del self.clients[client]
-            server_q_put('Banned client:', client)
+            server_q_put('Banned window:', client)
             return temp_conn
         except IndexError:
             server_q_put('Client at:', client, 'is already banned!')
